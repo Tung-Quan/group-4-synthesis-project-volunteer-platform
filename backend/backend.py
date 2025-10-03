@@ -3,6 +3,8 @@ from dotenv import load_dotenv,dotenv_values
 import psycopg2
 import os
 import logging
+import bcrypt
+load_dotenv()
 
 
 # Set up logging as [ Date-Time ]  [ Level ]  [ Module ]  Message
@@ -10,9 +12,7 @@ LOG_FORMAT = "[ %(asctime)s ]  [ %(levelname)s ]  %(message)s"
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, datefmt="%Y-%m-%d %H:%M:%S")
 logger = logging.getLogger(__name__)
 
-load_dotenv()
 
-app = fastapi.FastAPI()
 class ENV:
     #read .env in the root directory
     #load .env variables into ENV class attributes
@@ -23,9 +23,13 @@ class ENV:
         self.DATABASE_PASSWORD = dotenv_values(".env").get("DATABASE_PASSWORD")
         self.DATABASE_HOST = dotenv_values(".env").get("DATABASE_HOST")
         self.DATABASE_NAME = dotenv_values(".env").get("DATABASE_NAME")
+        self.PORT = dotenv_values(".env").get("PORT", 8000)
     
     def get_db_url(self):
         return f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}/{self.DATABASE_NAME}?sslmode=require&channel_binding=require"
+    
+    def get_port(self):
+        return int(self.PORT)
     
     
 # initialize database connection and use instance pattern for this class
@@ -85,7 +89,8 @@ class DataBase:
             
             #CREATE TABLES users IF NOT EXISTS
             self.cursor.execute(
-        """CREATE TABLE IF NOT EXISTS users (
+        """
+        CREATE TABLE IF NOT EXISTS users (
             id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             email         text NOT NULL UNIQUE,
             password_hash text NOT NULL,
@@ -286,30 +291,123 @@ class DataBase:
             # re-raise to make failures visible during startup
             raise
         self._initialized = True
-        
     
 
+    def execute_query(self, query: str):
+        try:
+            data = self.cursor.execute(query)
+            self.connection.commit()
+
+            if len(data) == 0:
+                logger.info("No data found.")
+                return []
+            
+            return data
+        except Exception as e:
+            logger.error(f"Error executing query: {e}")
+            self.connection.rollback()
+            return None
+    
+
+# Create a global database instance
 db = DataBase()
+logger.info("Database instance created")
 
 
-# Define API endpoints
-# LOGIN, REGISTER, PROFILE APIs
+app = fastapi.FastAPI(ENV().get_port())
+# DEFINE USERS REALTED APIs
+class LoginRequest(fastapi.BaseModel):
+    email: str
+    password: str
 
-#
-@app.get("/login")
-def login():
-    return {"message": "Login successful"}
+
+@app.post("/api/login")
+def login(request: LoginRequest):
+    query = f"SELECT password_hash FROM users WHERE email = '{request.email}'"
+    user = db.execute_query(query)
+    if user and bcrypt.checkpw(request.password.encode('utf-8'), user[0]['password_hash'].encode('utf-8')):
+        return {"message": "Login successful"}
+    return {"message": "Invalid email or password"}, 401
+
   
-@app.get("/register")
-def register():
-    return {"message": "Registration successful"}
-  
-@app.get("/profile")
-def profile():
-    return {"message": "User profile data"} 
+class ProfileRequest(fastapi.BaseModel):
+    user_id: str
+    
+@app.get("/api/profile")
+def profile(request: ProfileRequest):
+    query = f"SELECT id, email, display_name, type, is_active, created_at, updated_at FROM users WHERE id = '{request.user_id}'"
+    user = db.execute_query(query)
+    if user:
+        return {"user": user[0]}, 200
+    return {"message": "User not found"}, 404
+
 
 
 # EVENT APIs
-@app.get("/events")
+@app.get("/api/events")
 def events():
-    return {"message": "List of events"}
+    query = "SELECT id, title, description, start_time, end_time, location FROM events"
+    events = db.execute_query(query)
+    if events:
+        return {"events": events}, 200
+    return {"message": "No events found"}, 404
+
+class createEventRequest(fastapi.BaseModel):
+    title: str
+    description: str
+    location: str
+    starts_at: str  # ISO 8601 format
+    ends_at: str    # ISO 8601 format
+    capacity: int
+    organizer_id: str
+@app.post("/api/envents")
+def create_event(request: createEventRequest):
+    query = f"""
+    INSERT INTO events (title, description, location, starts_at, ends_at, capacity, created_by)
+    VALUES ('{request.title}', '{request.description}', '{request.location}', '{request.starts_at}', '{request.ends_at}', {request.capacity}, '{request.organizer_id}')
+    RETURNING id;
+    """
+    event_id = db.execute_query(query)
+    if event_id:
+        return {"message": "Event created successfully", "event_id": event_id[0]['id']}, 201
+    return {"message": "Failed to create event"}, 500
+
+class UpdateEventRequest(fastapi.BaseModel):
+    event_id: str
+    title: str
+    description: str
+    location: str
+    starts_at: str  # ISO 8601 format
+    ends_at: str    # ISO 8601 format
+    capacity: int
+    organizer_id: str
+@app.put("/api/events")
+def update_event(request: UpdateEventRequest):
+    query = f"""
+    SELECT created_by FROM events WHERE id = '{request.event_id}';
+    """
+    
+    event = db.execute_query(query)
+    if not event:
+        return {"message": "Event not found"}, 404
+    if event[0]['created_by'] != request.organizer_id:
+        return {"message": "Unauthorized"}, 403
+
+    query = f"""
+    UPDATE events
+    SET title = '{request.title}',
+        description = '{request.description}',
+        location = '{request.location}',
+        starts_at = '{request.starts_at}',
+        ends_at = '{request.ends_at}',
+        capacity = {request.capacity},
+        updated_at = now()
+    WHERE id = '{request.event_id}';
+    """
+    
+    success = db.execute_query(query)
+    if success is not None:
+        return {"message": "Event updated successfully"}, 200
+    
+    return {"message": "Failed to update event"}, 500
+    
