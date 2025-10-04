@@ -1,17 +1,3 @@
-// import React from 'react';
-
-// function PrimaryNavbar() {
-//   return (
-//     <nav className="bg-white py-2 px-4 text-gray-700 border-b border-gray-200 shadow-sm">
-//       <div className="max-w-7xl mx-auto">
-//         <span className="font-semibold text-lg">🏠 TRANG CHỦ </span>
-//       </div>
-//     </nav>
-//   );
-// }
-
-// export default PrimaryNavbar;
-
 import React from 'react';
 
 // Nhận currentPage prop

@@ -5,11 +5,11 @@ function LoginForm() {
   const [password, setPassword] = useState('');
 
   const handleLogin = (e) => {
-    e.preventDefault(); // Ngăn chặn form submit mặc định
+    e.preventDefault(); 
     console.log('Đăng nhập với:', { username, password });
-    // Ở đây bạn sẽ thêm logic gọi API đăng nhập
+    
     alert(`Đăng nhập thành công với Username: ${username} (Đây là demo)`);
-    // Sau khi đăng nhập thành công, bạn có thể chuyển hướng người dùng
+    
   };
 
   const handleClear = () => {
@@ -58,7 +58,7 @@ function LoginForm() {
             Đăng nhập
           </button>
           <button
-            type="button" // Quan trọng: type="button" để không submit form
+            type="button"
             onClick={handleClear}
             className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline w-1/2 transition-colors duration-200"
           >
