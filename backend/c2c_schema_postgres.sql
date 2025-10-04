@@ -71,7 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_app_applicant  ON applications(applicant_id);
 CREATE INDEX IF NOT EXISTS idx_app_status     ON applications(status);
 
 -- =========================
--- EXTENSIONS (kept)
+-- EXTENSIONS
 -- =========================
 
 -- tags & event_tags (N:M)

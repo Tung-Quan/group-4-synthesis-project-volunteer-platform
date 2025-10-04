@@ -33,3 +33,45 @@ See [`/ROADMAP.md`](./ROADMAP.md) for week-by-week deliverables.
 
 ## Security & Privacy
 See [`/docs/security`](./docs/security) and [`/SECURITY.md`](./SECURITY.md).
+
+## Running the backend (development)
+
+This repository includes a minimal FastAPI-based backend under the `backend/` folder. To run it locally:
+
+1. Create and activate a Python virtual environment (recommended):
+
+	- On Windows (PowerShell):
+	  ```powershell
+	  python -m venv .venv
+	  .\.venv\Scripts\Activate.ps1
+	  ```
+
+2. Install dependencies (from `backend/requirements.txt`):
+
+	```powershell
+	pip install -r backend/requirements.txt
+	```
+
+3. Ensure you have a `.env` file at the repository root (or set environment variables) with the database credentials used by `backend/backend.py`:
+
+	Example `.env`:
+
+	```text
+	DATABASE_USER=your_user
+	DATABASE_PASSWORD=your_password
+	DATABASE_HOST=localhost
+	DATABASE_NAME=your_db
+	```
+
+4. Run the backend with uvicorn on port 8000:
+
+	```powershell
+	# from repository root
+	uvicorn backend.backend:app --host 0.0.0.0 --reload
+	```
+
+5. Open http://localhost:8000/docs to see the interactive OpenAPI UI.
+
+Notes:
+- In development you can use `psycopg2-binary` (included) or `psycopg` / connection pool for production.
+- If you don't want to connect to a real DB while developing endpoints, edit `backend/backend.py` to mock the DB connection or provide a fallback mode.
