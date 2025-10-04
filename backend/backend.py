@@ -4,6 +4,9 @@ import psycopg2
 import os
 import logging
 import bcrypt
+from fastapi import FastAPI
+from pydantic import BaseModel
+
 load_dotenv()
 
 
@@ -314,9 +317,9 @@ db = DataBase()
 logger.info("Database instance created")
 
 
-app = fastapi.FastAPI(ENV().get_port())
+app = fastapi.FastAPI()
 # DEFINE USERS REALTED APIs
-class LoginRequest(fastapi.BaseModel):
+class LoginRequest(BaseModel):
     email: str
     password: str
 
@@ -330,7 +333,7 @@ def login(request: LoginRequest):
     return {"message": "Invalid email or password"}, 401
 
   
-class ProfileRequest(fastapi.BaseModel):
+class ProfileRequest(BaseModel):
     user_id: str
     
 @app.get("/api/profile")
@@ -352,7 +355,7 @@ def events():
         return {"events": events}, 200
     return {"message": "No events found"}, 404
 
-class createEventRequest(fastapi.BaseModel):
+class createEventRequest(BaseModel):
     title: str
     description: str
     location: str
@@ -372,7 +375,7 @@ def create_event(request: createEventRequest):
         return {"message": "Event created successfully", "event_id": event_id[0]['id']}, 201
     return {"message": "Failed to create event"}, 500
 
-class UpdateEventRequest(fastapi.BaseModel):
+class UpdateEventRequest(BaseModel):
     event_id: str
     title: str
     description: str
