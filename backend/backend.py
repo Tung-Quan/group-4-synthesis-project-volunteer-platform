@@ -286,8 +286,14 @@ class DataBase:
             GROUP BY u.id;
         """
             )
-            
+            self.connection.commit()
             logger.info("Views created or replaced")
+            data_temp = self.cursor.execute(
+                """
+                SELECT * FROM users
+                """
+            )
+            logger.info(f"Sample data fetched: {data_temp}")
             
             
         except Exception as e:
@@ -300,11 +306,6 @@ class DataBase:
         try:
             data = self.cursor.execute(query)
             self.connection.commit()
-
-            if len(data) == 0:
-                logger.info("No data found.")
-                return []
-            
             return data
         except Exception as e:
             logger.error(f"Error executing query: {e}")
