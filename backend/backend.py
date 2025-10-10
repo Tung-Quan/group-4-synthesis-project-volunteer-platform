@@ -1,10 +1,13 @@
 import fastapi 
+from pydantic import BaseModel
 from dotenv import load_dotenv,dotenv_values
 import psycopg2
 import os
 import logging
 import bcrypt
 load_dotenv()
+# check connect
+# print("DB_HOST:", os.getenv("DATABASE_HOST")) 
 
 
 # Set up logging as [ Date-Time ]  [ Level ]  [ Module ]  Message
@@ -19,11 +22,13 @@ class ENV:
     #for example, ENV.DB_HOST = os.getenv("DB_HOST")
     
     def __init__(self):
-        self.DATABASE_USER = dotenv_values(".env").get("DATABASE_USER")
-        self.DATABASE_PASSWORD = dotenv_values(".env").get("DATABASE_PASSWORD")
-        self.DATABASE_HOST = dotenv_values(".env").get("DATABASE_HOST")
-        self.DATABASE_NAME = dotenv_values(".env").get("DATABASE_NAME")
-        self.PORT = dotenv_values(".env").get("PORT", 8000)
+        # Read .env values first, then fall back to environment variables.
+        vals = dotenv_values(".env")
+        self.DATABASE_USER = vals.get("DATABASE_USER")
+        self.DATABASE_PASSWORD = vals.get("DATABASE_PASSWORD")
+        self.DATABASE_HOST = vals.get("DATABASE_HOST")
+        self.DATABASE_NAME = vals.get("DATABASE_NAME")
+        self.PORT = vals.get("PORT", 8000)
     
     def get_db_url(self):
         return f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}/{self.DATABASE_NAME}?sslmode=require&channel_binding=require"
@@ -314,11 +319,19 @@ db = DataBase()
 logger.info("Database instance created")
 
 
-app = fastapi.FastAPI(ENV().get_port())
+app = fastapi.FastAPI()
+
 # DEFINE USERS REALTED APIs
-class LoginRequest(fastapi.BaseModel):
+class LoginRequest(BaseModel):
     email: str
     password: str
+
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    display_name: str
+    type: str = "BOTH"
 
 
 @app.post("/api/login")
@@ -329,11 +342,57 @@ def login(request: LoginRequest):
         return {"message": "Login successful"}
     return {"message": "Invalid email or password"}, 401
 
+
+@app.post("/api/register")
+def register(request: RegisterRequest):
+    # simple validation/normalization
+    email = request.email.lower().strip()
+    cur = db.connection.cursor()
+    try:
+        # check existing user (parameterized to avoid SQL injection)
+        cur.execute("SELECT 1 FROM users WHERE email = %s", (email,))
+        if cur.fetchone():
+            raise fastapi.HTTPException(status_code=409, detail="Email already registered")
+
+        # hash password using bcrypt
+        pwd_hash = bcrypt.hashpw(request.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+        # insert new user and return created fields
+        cur.execute(
+            """
+            INSERT INTO users (email, password_hash, display_name, type)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id, email, display_name, type, is_active, created_at
+            """,
+            (email, pwd_hash, request.display_name, request.type),
+        )
+        row = cur.fetchone()
+        db.connection.commit()
+
+        if row:
+            cols = [d[0] for d in cur.description]
+            return dict(zip(cols, row))
+        else:
+            raise fastapi.HTTPException(status_code=500, detail="Failed to create user")
+    except psycopg2.IntegrityError:
+        db.connection.rollback()
+        raise fastapi.HTTPException(status_code=409, detail="Email already registered")
+    except Exception as e:
+        db.connection.rollback()
+        logger.exception("Error creating user")
+        raise fastapi.HTTPException(status_code=500, detail="Internal server error")
+    finally:
+        try:
+            cur.close()
+        except Exception:
+            pass
+
   
-class ProfileRequest(fastapi.BaseModel):
+class ProfileRequest(BaseModel):
     user_id: str
     
 @app.get("/api/profile")
+@app.post("/api/profile")
 def profile(request: ProfileRequest):
     query = f"SELECT id, email, display_name, type, is_active, created_at, updated_at FROM users WHERE id = '{request.user_id}'"
     user = db.execute_query(query)
@@ -352,7 +411,7 @@ def events():
         return {"events": events}, 200
     return {"message": "No events found"}, 404
 
-class createEventRequest(fastapi.BaseModel):
+class createEventRequest(BaseModel):
     title: str
     description: str
     location: str
@@ -360,7 +419,7 @@ class createEventRequest(fastapi.BaseModel):
     ends_at: str    # ISO 8601 format
     capacity: int
     organizer_id: str
-@app.post("/api/envents")
+@app.post("/api/events")
 def create_event(request: createEventRequest):
     query = f"""
     INSERT INTO events (title, description, location, starts_at, ends_at, capacity, created_by)
@@ -372,7 +431,7 @@ def create_event(request: createEventRequest):
         return {"message": "Event created successfully", "event_id": event_id[0]['id']}, 201
     return {"message": "Failed to create event"}, 500
 
-class UpdateEventRequest(fastapi.BaseModel):
+class UpdateEventRequest(BaseModel):
     event_id: str
     title: str
     description: str
