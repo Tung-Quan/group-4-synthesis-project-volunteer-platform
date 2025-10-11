@@ -1,14 +1,47 @@
 import fastapi 
-from dotenv import load_dotenv,dotenv_values
+from pydantic import BaseModel
+from dotenv import load_dotenv
 import psycopg2
-import os
+import os,time, uuid, secrets
 import logging
 import bcrypt
-from fastapi import FastAPI
-from pydantic import BaseModel
+import threading
 
+from transformers import Optional
+
+from fastapi import FastAPI,HTTPException,security, Depends, Request,status, APIRouter
+from fastapi.responses import ORJSONResponse, PlainTextResponse
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from models import User, Event, Application
+from pydantic import BaseModel, Field
+from fastapi import Request, Response
+from typing import Callable
+from security_cookies import create_access_token, create_refresh_token, get_current_user, require_roles
+
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+from datetime import datetime, timedelta
+
+
+from dotenv import load_dotenv,dotenv_values
 load_dotenv()
 
+import jwt
+from datetime import datetime, timedelta
+from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, status
+
+load_dotenv()
+# check connect
+# print("DB_HOST:", os.getenv("DATABASE_HOST")) 
 
 # Set up logging as [ Date-Time ]  [ Level ]  [ Module ]  Message
 LOG_FORMAT = "[ %(asctime)s ]  [ %(levelname)s ]  %(message)s"
@@ -22,23 +55,146 @@ class ENV:
     #for example, ENV.DB_HOST = os.getenv("DB_HOST")
     
     def __init__(self):
-        self.DATABASE_USER = dotenv_values(".env").get("DATABASE_USER")
-        self.DATABASE_PASSWORD = dotenv_values(".env").get("DATABASE_PASSWORD")
-        self.DATABASE_HOST = dotenv_values(".env").get("DATABASE_HOST")
-        self.DATABASE_NAME = dotenv_values(".env").get("DATABASE_NAME")
-        self.PORT = dotenv_values(".env").get("PORT", 8000)
+        # Read .env values first, then fall back to environment variables.
+        self.DATABASE_USER = os.getenv("DATABASE_USER")
+        self.DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
+        self.DATABASE_HOST = os.getenv("DATABASE_HOST")
+        self.DATABASE_NAME = os.getenv("DATABASE_NAME")
+        self.PORT = os.getenv("PORT", 8000)
+        self.JWT_SECRET = os.getenv("JWT_SECRET", "super-long-random-string")
+        self.JWT_ALGO = os.getenv("JWT_ALGO", "HS256")
+        self.ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
+        self.REFRESH_TOKEN_EXPIRE_MINUTES = int(os.getenv("REFRESH_TOKEN_EXPIRE_MINUTES", "7"))
+        self.COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN")  
+        self.BCRYPT_ROUNDS = int(os.getenv("BCRYPT_ROUNDS", "12"))
+        self.API_ORIGIN = os.getenv("API_ORIGIN") 
+        self.ALLOWED_HOSTS = (os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")).split(",")
+
     
-    def get_db_url(self):
-        return f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}/{self.DATABASE_NAME}?sslmode=require&channel_binding=require"
+    PORT = int(os.getenv("PORT", "8000"))
+    def get_db_url(self) -> str:
+        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}/{self.DB_NAME}?sslmode=require&channel_binding=require"
     
     def get_port(self):
         return int(self.PORT)
+
+    # JWT CONFIG 
+    def get_jwt_secret(self):
+        # Prefer explicit env vars; default algorithm to HS256 for safety.
+        jwt_secret = os.getenv("JWT_SECRET")
+        # some setups use JWT_ALGO, others JWT_ALGORITHM — support both
+        jwt_algo = os.getenv("JWT_ALGO")
+        # normalize algorithm value
+        if isinstance(jwt_algo, str):
+            jwt_algo = jwt_algo.strip()
+        access_token_expire_minutes = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
+        refresh_token_expire_minutes = int(os.getenv("REFRESH_TOKEN_EXPIRE_MINUTES", 43200))  # 30 days
+        oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
+        return jwt_secret, jwt_algo, access_token_expire_minutes, refresh_token_expire_minutes, oauth2_scheme;
+env_settings = ENV()
+
+#==========================SECURTY=============================================================
+
+_pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+#=======================
+#-JWT and Auth settings
+#=======================
+def hash_password(password: str) -> str:
+    """Hash a password for storing."""
+    return _pwd.hash(password, rounds=env_settings.BCRYPT_ROUNDS)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a stored password against one provided by user"""
+    return _pwd.verify(plain_password, hashed_password)
+
+def make_jwt_token(sub: str, ttype:str, ttl: timedelta) -> str:
+    to_encode = {"sub": sub, "type": ttype, "exp": datetime.now() + ttl, "iat": datetime.now()}
+    encoded_jwt = jwt.encode(to_encode, env_settings.JWT_SECRET, algorithm=env_settings.JWT_ALGO)
+    return encoded_jwt
+
+#=======================
+#-Token data model
+#=======================
+PROTECTED_PREFIXES = ("/", "/dashboard", "/settings")  
+EXCLUDE_PATHS = {"/login", "/auth/login", "/auth/refresh", "/healthz", "/static", "/favicon.ico"}
+
+class TokenData(BaseModel):
+    sub: Optional[str] = None
+    type: Optional[str] = "access"
+    iat: int
+    exp: int
+    aud: str | None = None
+    jit: str | None = None
+
+def decode_token(token: str, expected_type: str = "access") -> TokenData:
+    try:
+        payload = jwt.decode(
+            token, env_settings.JWT_SECRET, 
+            algorithms=[env_settings.JWT_ALGO],
+            options={"required_exp": True, "required_iat": True}
+            )
+        sub: str = payload.get("sub")
+        ttype: str = payload.get("type")
+        if sub is None or ttype != expected_type:
+            raise JWTError()
+        return TokenData(sub=sub, type=ttype)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+
+def make_csrf() -> str:
+    return secrets.token_urlsafe(32)
+
+def assert_csrf(request: Request):
+    session_token = request.session.get("csrf_token")
+    header_token = request.headers.get("X-CSRF-Token")
+    if not session_token or not header_token or session_token != header_token:
+        raise HTTPException(status_code=403, detail="CSRF token missing or invalid")
+    return True
+
+class PageAuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: Callable):
+        path = request.url.path
+        if any(path.startswith(prefix) for prefix in EXCLUDE_PATHS):
+            return await call_next(request) 
     
+        if any(path.startswith(prefix) for prefix in PROTECTED_PREFIXES):
+            token = request.cookies.get("access_token")
+            if not token:
+                return PlainTextResponse("Unauthorized", status_code=401)
+            try:
+                decode_token(token, expected_type="access")
+            except JWTError:
+                return PlainTextResponse("Unauthorized", status_code=401)
+        
+        response = await call_next(request)
+        logger.info(f"Request: {request.method} {request.url} - Response: {response.status_code}")
+        return response
     
+async def current_user(req: Request) -> User:
+    tok = req.cookies.get("access")
+    if not tok: 
+        raise HTTPException(401, "Missing token")
+    data = decode_jwt(tok)
+    if data.type != "access": 
+        raise HTTPException(401, "Wrong token type")
+    user = (await db.execute(select(User).where(User.id == data.sub))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(401, "User not found")
+    return user
+
+def require_roles(*roles: str):
+    async def dep(u: User = Depends(current_user)):
+        if u.role not in roles:
+            raise HTTPException(403, "Insufficient role")
+        return u
+    return dep
+
+page_auth_middleware = PageAuthMiddleware()
+
+
+#===============================================DATABASE========================================
 # initialize database connection and use instance pattern for this class
-import threading
-
-
 class DataBase:
     """Thread-safe singleton that holds a persistent psycopg2 connection.
 
@@ -286,8 +442,14 @@ class DataBase:
             GROUP BY u.id;
         """
             )
-            
+            self.connection.commit()
             logger.info("Views created or replaced")
+            data_temp = self.cursor.execute(
+                """
+                SELECT * FROM users
+                """
+            )
+            logger.info(f"Sample data fetched: {data_temp}")
             
             
         except Exception as e:
@@ -296,47 +458,276 @@ class DataBase:
         self._initialized = True
     
 
-    def execute_query(self, query: str):
+    async def execute_query(self, query: str):
         try:
-            data = self.cursor.execute(query)
-            self.connection.commit()
-
-            if len(data) == 0:
-                logger.info("No data found.")
-                return []
-            
+            data = await self.cursor.execute(query)
+            await self.connection.commit()
             return data
         except Exception as e:
             logger.error(f"Error executing query: {e}")
-            self.connection.rollback()
+            await self.connection.rollback()
             return None
-    
+        
+    async def fetch_one(self, query: str, params: tuple = ()):
+        try:
+            await self.cursor.execute(query, params)
+            return await self.cursor.fetchone()
+        except Exception as e:
+            logger.error(f"Error fetching one: {e}")
+            return None
 
+    # Synchronous helpers for blocking psycopg2 usage from sync endpoints
+    def execute_query_sync(self, query: str, params: tuple = ()): 
+        try:
+            self.cursor.execute(query, params)
+            # try to fetch rows if any
+            if self.cursor.description:
+                cols = [d.name if hasattr(d, 'name') else d[0] for d in self.cursor.description]
+                rows = self.cursor.fetchall()
+                self.connection.commit()
+                return [dict(zip(cols, r)) for r in rows]
+            else:
+                self.connection.commit()
+                return []
+        except Exception as e:
+            logger.error(f"Error executing query sync: {e}")
+            try:
+                self.connection.rollback()
+            except Exception:
+                pass
+            return None
+
+    def fetch_one_sync(self, query: str, params: tuple = ()): 
+        try:
+            self.cursor.execute(query, params)
+            row = self.cursor.fetchone()
+            if row and self.cursor.description:
+                cols = [d.name if hasattr(d, 'name') else d[0] for d in self.cursor.description]
+                return dict(zip(cols, row))
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching one sync: {e}")
+            try:
+                self.connection.rollback()
+            except Exception:
+                pass
+            return None
+
+#==================================
 # Create a global database instance
+#==================================
 db = DataBase()
 logger.info("Database instance created")
 
 
-app = fastapi.FastAPI()
+app = FastAPI(default_response_class=ORJSONResponse, port = env_settings.PORT)
+
+#===================================
+# - middlewares - 
+#===================================
+@app.middleware("http")
+async def security_headers(req: Request, call_next):
+    # Log basic request info so we can see requests arriving in the terminal
+    logger.info(f"Incoming request: {request.method} {request.url}")
+    try:
+        # Try to read body for debug (may be empty or streamed)
+        body = await request.body()
+        if body:
+            try:
+                logger.debug(f"Request body: {body.decode('utf-8')}")
+            except Exception:
+                logger.debug(f"Request body (raw bytes, {len(body)} bytes)")
+    except Exception:
+        # If the body cannot be read (e.g., streaming) just continue
+        logger.debug("Could not read request body")
+
+    start = datetime.utcnow()
+    try:
+        response = await call_next(request)
+        resp.headers.update({
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "no-referrer",
+        "Permissions-Policy": "geolocation=(), microphone=()",
+      })
+    except Exception:
+        # Log exception with full stacktrace then re-raise so exception handlers still run
+        logger.exception("Unhandled exception while handling request")
+        raise
+    duration = (datetime.utcnow() - start).total_seconds()
+    logger.info(f"Completed {request.method} {request.url} -> {response.status_code} in {duration:.3f}s")    
+    return response
+
+# Trusted hosts
+app.add_middleware(SessionMiddleware, secret_key=env_settings.JWT_SECRET)
+
+# CORS (chỉ origin frontend)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[env_settings.API_ORIGIN] if env_settings.API_ORIGIN else [],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "x-csrf"],
+)
+#===================================
+#- Session and CSRF Middleware -
+#===================================
+class CSRFMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.method in ("POST", "PUT", "DELETE", "PATCH"):
+            assert_csrf(request)
+        if "csrf_token" not in request.session:
+            request.session["csrf_token"] = make_csrf()
+        response = await call_next(request)
+        return response
+
+
+#========================
+#- api endpoints desgin -
+#========================
+
 # DEFINE USERS REALTED APIs
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    display_name: str
+    type: str = "BOTH"
+    
 class LoginRequest(BaseModel):
     email: str
     password: str
 
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    jwt_secret, jwt_algo, access_token_expire_minutes, _, _ = ENV().get_jwt_secret()
+    expire = datetime.now() + (expires_delta or timedelta(minutes=access_token_expire_minutes))
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, jwt_secret, algorithm=jwt_algo)
+    return encoded_jwt
+
+def verify_access_token(token: str = Depends(ENV().get_jwt_secret()[4])):
+    jwt_secret, jwt_algo, _, _, _ = ENV().get_jwt_secret()
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, jwt_secret, algorithms=[jwt_algo])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+        return user_id
+    except jwt.PyJWTError:
+        raise credentials_exception
+
+def decode_token(token: str):
+    jwt_secret, jwt_algo, _, _, _ = ENV().get_jwt_secret()
+    try:
+        payload = jwt.decode(token, jwt_secret, algorithms=[jwt_algo])
+        return payload
+    except jwt.ExpiredSignatureError:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired")
+    except jwt.InvalidTokenError:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+@app.post("/api/register")
+def register(request: RegisterRequest):
+    # simple validation/normalization
+    email = request.email.lower().strip()
+    cur = db.connection.cursor()
+    # debug
+    logger.debug(f"Registering user with email: {email}")
+    try:
+        # check existing user (parameterized to avoid SQL injection)
+        cur.execute("SELECT 1 FROM users WHERE email = %s", (email,))
+        if cur.fetchone():
+            raise fastapi.HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+
+        # hash password using bcrypt
+        pwd_hash = bcrypt.hashpw(request.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+        # insert new user and return created fields
+        cur.execute(
+            """
+            INSERT INTO users (email, password_hash, display_name, type)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id, email, display_name, type, is_active, created_at
+            """,
+            (email, pwd_hash, request.display_name, request.type),
+        )
+        row = cur.fetchone()
+        db.connection.commit()
+
+        # return created user (as dict)
+        if row:
+            cols = [d[0] for d in cur.description]
+            return dict(zip(cols, row))
+        else:
+            raise fastapi.HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create user")
+    # Handle unique constraint violation (email already exists)
+    except psycopg2.IntegrityError:
+        db.connection.rollback()
+        # Log detailed DB integrity error if available and return 409
+        logger.exception("Integrity error while creating user (possible duplicate email)")
+        db.connection.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+    # Handle other database errors
+    except Exception as e:
+        # If the exception is already an HTTPException we raised intentionally, re-raise it
+        if isinstance(e, HTTPException):
+            raise
+        db.connection.rollback()
+        logger.exception("Error creating user: %s", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+    finally:
+        try:
+            cur.close()
+        except Exception:
+            pass
 
 @app.post("/api/login")
 def login(request: LoginRequest):
-    query = f"SELECT password_hash FROM users WHERE email = '{request.email}'"
-    user = db.execute_query(query)
-    if user and bcrypt.checkpw(request.password.encode('utf-8'), user[0]['password_hash'].encode('utf-8')):
-        return {"message": "Login successful"}
-    return {"message": "Invalid email or password"}, 401
+    _, _, _, refresh_token_expire_minutes, _ = ENV().get_jwt_secret()
+    # normalize email before lookup
+    email = request.email.lower().strip()
+    cur= db.connection.cursor()
+    cur.execute("SELECT id, password_hash FROM users WHERE email = %s", (email,))
+    user = cur.fetchone()
+    cur.close()
 
-  
+    if not user:
+        raise fastapi.HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    
+    user_id, pwd_hash = user
+
+    if not bcrypt.checkpw(request.password.encode('utf-8'), pwd_hash.encode('utf-8')):
+        raise fastapi.HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    
+    access_token = create_access_token(data={"sub": str(user_id), "email": email})
+    refresh_token = create_access_token(data={"sub": str(user_id), "email": email}, expires_delta=timedelta(minutes=refresh_token_expire_minutes))
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user": {"id": str(user_id), "email": email}
+    }
+# def login(request: LoginRequest):
+#     query = f"SELECT password_hash FROM users WHERE email = '{request.email}'"
+#     user = db.execute_query(query)
+#     if user and bcrypt.checkpw(request.password.encode('utf-8'), user[0]['password_hash'].encode('utf-8')):
+#         return {"message": "Login successful"}
+    # return {"message": "Invalid email or password"}, 401
+
+
+
 class ProfileRequest(BaseModel):
     user_id: str
     
 @app.get("/api/profile")
+@app.post("/api/profile")
 def profile(request: ProfileRequest):
     query = f"SELECT id, email, display_name, type, is_active, created_at, updated_at FROM users WHERE id = '{request.user_id}'"
     user = db.execute_query(query)
@@ -348,9 +739,10 @@ def profile(request: ProfileRequest):
 
 # EVENT APIs
 @app.get("/api/events")
-def events():
+def events(request: Request):
+    assert_csrf(request)
     query = "SELECT id, title, description, start_time, end_time, location FROM events"
-    events = db.execute_query(query)
+    events = db.execute_query_sync(query)
     if events:
         return {"events": events}, 200
     return {"message": "No events found"}, 404
@@ -363,7 +755,7 @@ class createEventRequest(BaseModel):
     ends_at: str    # ISO 8601 format
     capacity: int
     organizer_id: str
-@app.post("/api/envents")
+@app.post("/api/events")
 def create_event(request: createEventRequest):
     query = f"""
     INSERT INTO events (title, description, location, starts_at, ends_at, capacity, created_by)
@@ -385,32 +777,27 @@ class UpdateEventRequest(BaseModel):
     capacity: int
     organizer_id: str
 @app.put("/api/events")
-def update_event(request: UpdateEventRequest):
-    query = f"""
-    SELECT created_by FROM events WHERE id = '{request.event_id}';
-    """
-    
-    event = db.execute_query(query)
+def update_event(request: UpdateEventRequest, req: Request):
+    assert_csrf(req)
+    query = "SELECT created_by FROM events WHERE id = %s"
+    event = db.fetch_one_sync(query, (request.event_id,))
     if not event:
         return {"message": "Event not found"}, 404
-    if event[0]['created_by'] != request.organizer_id:
+    if event['created_by'] != request.organizer_id:
         return {"message": "Unauthorized"}, 403
 
-    query = f"""
-    UPDATE events
-    SET title = '{request.title}',
-        description = '{request.description}',
-        location = '{request.location}',
-        starts_at = '{request.starts_at}',
-        ends_at = '{request.ends_at}',
-        capacity = {request.capacity},
+    query = """UPDATE events
+    SET title = %s,
+        description = %s,
+        location = %s,
+        starts_at = %s,
+        ends_at = %s,
+        capacity = %s,
         updated_at = now()
-    WHERE id = '{request.event_id}';
-    """
-    
-    success = db.execute_query(query)
+    WHERE id = %s;"""
+
+    success = db.execute_query_sync(query, (request.title, request.description, request.location, request.starts_at, request.ends_at, request.capacity, request.event_id))
     if success is not None:
         return {"message": "Event updated successfully"}, 200
     
     return {"message": "Failed to update event"}, 500
-    
