@@ -28,11 +28,11 @@ class ENV:
     
     def __init__(self):
         # Read .env values first, then fall back to environment variables.
-        self.DATABASE_USER = vals.get("DATABASE_USER")
-        self.DATABASE_PASSWORD = vals.get("DATABASE_PASSWORD")
-        self.DATABASE_HOST = vals.get("DATABASE_HOST")
-        self.DATABASE_NAME = vals.get("DATABASE_NAME")
-        self.PORT = vals.get("PORT", 8000)
+        self.DATABASE_USER = os.getenv("DATABASE_USER")
+        self.DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
+        self.DATABASE_HOST = os.getenv("DATABASE_HOST")
+        self.DATABASE_NAME = os.getenv("DATABASE_NAME")
+        self.PORT = os.getenv("PORT", 8000)
     
     def get_db_url(self):
         return f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}/{self.DATABASE_NAME}?sslmode=require&channel_binding=require"
