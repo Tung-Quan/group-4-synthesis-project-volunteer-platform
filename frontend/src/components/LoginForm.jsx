@@ -9,7 +9,8 @@ function LoginForm() {
     console.log('Đăng nhập với:', { username, password });
     
     alert(`Đăng nhập thành công với Username: ${username} (Đây là demo)`);
-    
+
+    window.location.href = "/"; //nav back to homepage, might have to do set up a different page for logged-in users?
   };
 
   const handleClear = () => {
