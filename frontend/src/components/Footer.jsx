@@ -10,7 +10,7 @@ function Footer() {
             <span className="mr-2">📞</span> 0987654321
           </p>
           <p className="flex items-center ">
-            <span className="mr-2">📍</span> Địa chỉ: 268 Lý Thường Kiệt, phường Diễn Hồng, Thành phố Hồ Chí Minh.
+            <span className="mr-2">📍</span> Địa chỉ: 268 Lý Thường Kiệt, phường Diên Hồng, Thành phố Hồ Chí Minh.
           </p>
         </div>
       </div>

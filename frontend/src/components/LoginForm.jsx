@@ -10,6 +10,7 @@ function LoginForm() {
     
     alert(`Đăng nhập thành công với Username: ${username} (Đây là demo)`);
     
+    window.location.href = "/"; //nav back to homepage
   };
 
   const handleClear = () => {
