@@ -7,7 +7,7 @@ import logging
 import bcrypt
 import threading
 
-from transformers import Optional
+from typing import Optional
 
 from fastapi import FastAPI,HTTPException,security, Depends, Request,status, APIRouter
 from fastapi.responses import ORJSONResponse, PlainTextResponse
@@ -33,13 +33,10 @@ from datetime import datetime, timedelta
 
 from dotenv import load_dotenv,dotenv_values
 load_dotenv()
-
-import jwt
+# Use python-jose for JWT handling (installed as python-jose)
 from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, status
-
-load_dotenv()
 # check connect
 # print("DB_HOST:", os.getenv("DATABASE_HOST")) 
 
@@ -73,7 +70,8 @@ class ENV:
     
     PORT = int(os.getenv("PORT", "8000"))
     def get_db_url(self) -> str:
-        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}/{self.DB_NAME}?sslmode=require&channel_binding=require"
+        # Use the attribute names initialized in __init__
+        return f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}/{self.DATABASE_NAME}?sslmode=require&channel_binding=require"
     
     def get_port(self):
         return int(self.PORT)
@@ -171,26 +169,53 @@ class PageAuthMiddleware(BaseHTTPMiddleware):
         logger.info(f"Request: {request.method} {request.url} - Response: {response.status_code}")
         return response
     
-async def current_user(req: Request) -> User:
-    tok = req.cookies.get("access")
-    if not tok: 
-        raise HTTPException(401, "Missing token")
-    data = decode_jwt(tok)
-    if data.type != "access": 
-        raise HTTPException(401, "Wrong token type")
-    user = (await db.execute(select(User).where(User.id == data.sub))).scalar_one_or_none()
-    if not user:
-        raise HTTPException(401, "User not found")
-    return user
+async def current_user(req: Request):
+    """Resolve the current user from the access_token cookie.
+
+    Returns a lightweight object with `.role` attribute for compatibility
+    with `require_roles`.
+    """
+    tok = req.cookies.get("access_token")
+    if not tok:
+        raise HTTPException(status_code=401, detail="Missing token")
+    data = decode_token(tok)
+    # decode_token raises an HTTPException on failure
+    if isinstance(data, HTTPException):
+        raise data
+    if data.type != "access":
+        raise HTTPException(status_code=401, detail="Wrong token type")
+
+    # Fetch user from DB (synchronous helper). This will block briefly during import/runtime
+    user_row = db.fetch_one_sync(
+        "SELECT id, email, display_name, type AS role, is_active FROM users WHERE id = %s",
+        (data.sub,)
+    )
+    if not user_row:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    # Build a small object with attribute access expected by callers
+    class SimpleUser:
+        pass
+
+    u = SimpleUser()
+    u.id = user_row.get("id")
+    u.email = user_row.get("email")
+    u.role = user_row.get("role") or user_row.get("type")
+    u.is_active = user_row.get("is_active", True)
+    return u
 
 def require_roles(*roles: str):
     async def dep(u: User = Depends(current_user)):
-        if u.role not in roles:
-            raise HTTPException(403, "Insufficient role")
+        # support both attribute and dict-like users
+        role = getattr(u, "role", None) or (u.get("role") if isinstance(u, dict) else None)
+        if role not in roles:
+            raise HTTPException(status_code=403, detail="Insufficient role")
         return u
     return dep
 
-page_auth_middleware = PageAuthMiddleware()
+# PageAuthMiddleware should be added to the FastAPI app by calling
+# `app.add_middleware(PageAuthMiddleware)` after `app` is created. Do not
+# instantiate BaseHTTPMiddleware directly without the app argument.
 
 
 #===============================================DATABASE========================================
@@ -221,6 +246,15 @@ class DataBase:
         if getattr(self, "_initialized", False):
             return
         self.env = ENV()
+        # If any DB config is missing, skip making a connection at import time.
+        required = (self.env.DATABASE_HOST, self.env.DATABASE_USER, self.env.DATABASE_PASSWORD, self.env.DATABASE_NAME)
+        if not all(required):
+            logger.warning("Database environment not fully configured; skipping DB connection (import-time).")
+            self.connection = None
+            self.cursor = None
+            self._initialized = True
+            return
+
         try:
             # keep connection open on the instance (don't use `with`)
             self.connection = psycopg2.connect(self.env.get_db_url())
@@ -453,8 +487,10 @@ class DataBase:
             
             
         except Exception as e:
-            # re-raise to make failures visible during startup
-            raise
+            # Do not re-raise here; keep the module importable even if DB connection fails.
+            logger.exception("Could not initialize database connection: %s", e)
+            self.connection = None
+            self.cursor = None
         self._initialized = True
     
 
@@ -478,6 +514,9 @@ class DataBase:
 
     # Synchronous helpers for blocking psycopg2 usage from sync endpoints
     def execute_query_sync(self, query: str, params: tuple = ()): 
+        if not self.connection or not self.cursor:
+            logger.error("execute_query_sync called but DB connection is not initialized")
+            return None
         try:
             self.cursor.execute(query, params)
             # try to fetch rows if any
@@ -498,6 +537,9 @@ class DataBase:
             return None
 
     def fetch_one_sync(self, query: str, params: tuple = ()): 
+        if not self.connection or not self.cursor:
+            logger.error("fetch_one_sync called but DB connection is not initialized")
+            return None
         try:
             self.cursor.execute(query, params)
             row = self.cursor.fetchone()
@@ -522,16 +564,19 @@ logger.info("Database instance created")
 
 app = FastAPI(default_response_class=ORJSONResponse, port = env_settings.PORT)
 
+# Register page auth middleware
+app.add_middleware(PageAuthMiddleware)
+
 #===================================
 # - middlewares - 
 #===================================
 @app.middleware("http")
 async def security_headers(req: Request, call_next):
     # Log basic request info so we can see requests arriving in the terminal
-    logger.info(f"Incoming request: {request.method} {request.url}")
+    logger.info(f"Incoming request: {req.method} {req.url}")
     try:
         # Try to read body for debug (may be empty or streamed)
-        body = await request.body()
+        body = await req.body()
         if body:
             try:
                 logger.debug(f"Request body: {body.decode('utf-8')}")
@@ -543,20 +588,20 @@ async def security_headers(req: Request, call_next):
 
     start = datetime.utcnow()
     try:
-        response = await call_next(request)
-        resp.headers.update({
-        "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
-        "X-Frame-Options": "DENY",
-        "X-Content-Type-Options": "nosniff",
-        "Referrer-Policy": "no-referrer",
-        "Permissions-Policy": "geolocation=(), microphone=()",
-      })
+        response = await call_next(req)
+        response.headers.update({
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+            "X-Frame-Options": "DENY",
+            "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "no-referrer",
+            "Permissions-Policy": "geolocation=(), microphone=()",
+        })
     except Exception:
         # Log exception with full stacktrace then re-raise so exception handlers still run
         logger.exception("Unhandled exception while handling request")
         raise
     duration = (datetime.utcnow() - start).total_seconds()
-    logger.info(f"Completed {request.method} {request.url} -> {response.status_code} in {duration:.3f}s")    
+    logger.info(f"Completed {req.method} {req.url} -> {response.status_code} in {duration:.3f}s")    
     return response
 
 # Trusted hosts
@@ -619,7 +664,8 @@ def verify_access_token(token: str = Depends(ENV().get_jwt_secret()[4])):
         if user_id is None:
             raise credentials_exception
         return user_id
-    except jwt.PyJWTError:
+    except Exception:
+        # jose raises JWTError (imported as JWTError) for invalid tokens
         raise credentials_exception
 
 def decode_token(token: str):
@@ -635,7 +681,7 @@ def decode_token(token: str):
 @app.post("/api/register")
 def register(request: RegisterRequest):
     # simple validation/normalization
-    email = request.email.lower().strip()
+    email = request.email.lower().strip()   
     cur = db.connection.cursor()
     # debug
     logger.debug(f"Registering user with email: {email}")
