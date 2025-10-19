@@ -74,3 +74,9 @@ def login(request: LoginRequest) -> dict:
         "token_type": "bearer",
         "user": {"id": user_id, "email": email}
     }
+
+def logout(user_id: str) -> dict:
+    # For JWT, logout is typically handled client-side by deleting tokens.
+    # Optionally, implement token blacklisting here if needed.
+    logger.info(f"User {user_id} logged out.")
+    return {"message": "Logout successful"}

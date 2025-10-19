@@ -6,7 +6,7 @@ class RegisterRequest(BaseModel):
     email: str
     password: str
     display_name: str
-    type: Literal['STUDENT', 'ORGANIZER']
+    type: Literal['STUDENT', 'ORGANIZER','BOTH']
 
 class LoginRequest(BaseModel):
     email: str
@@ -17,6 +17,7 @@ class LogoutRequest(BaseModel):
 
 class UpdateProfileRequest(BaseModel):
     display_name: str | None = None
+    # Can add more fields as needed
 
 class UserProfileResponse(BaseModel):
     id: str
@@ -27,4 +28,4 @@ class UserProfileResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attribute = True

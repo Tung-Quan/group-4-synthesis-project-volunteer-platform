@@ -17,3 +17,8 @@ def login_user(request: LoginRequest):
     if "error" in result:
         raise HTTPException(status_code=result["status_code"], detail=result["error"])
     return result
+
+@router.post("/logout")
+def logout_user(request: Request):
+    result = auth_controller.logout(request.headers.get("user_id"))
+    return result

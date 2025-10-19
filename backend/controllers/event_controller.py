@@ -2,8 +2,7 @@ from ..models.event_models import CreateEventRequest, UpdateEventRequest
 from ..config.logger import logger
 from ..db.database import db
 from fastapi import Request
-from ..config.security import assert_csrf
-
+from ..dependencies import assert_csrf
 # @app.get("/api/events")
 def events(request: Request):
     assert_csrf(request)
