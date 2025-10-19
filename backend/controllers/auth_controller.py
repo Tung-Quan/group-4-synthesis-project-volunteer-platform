@@ -9,15 +9,24 @@ import psycopg2
 def register(request: RegisterRequest) -> dict:
     # simple validation/normalization
     email = request.email.lower().strip()
+    valid_types = {'STUDENT', 'ORGANIZER'}
     # debug
     logger.debug(f"Registering user with email: {email}")
 
+    # Check for non-empty fields
+    if not email or not request.password or not request.display_name or not request.type:
+        return {"error": "All fields are required", "status_code": 400}
+    # Check if role is valid
+    # Khang: need to fix to student only after testing
+    if request.type not in valid_types:
+        return {"error": "Invalid user type", "status_code": 400}
+    # Check if user already exists
     existing_user = db.fetch_one_sync("SELECT 1 FROM users WHERE email = %s", (email,))
     if existing_user:
         return {"error": "Email already registered", "status_code": 409}
     
-    pwd_hash = hash_password(request.password)
 
+    pwd_hash = hash_password(request.password)
     query = """
     INSERT INTO users (email, password_hash, display_name, type)
     VALUES (%s, %s, %s, %s)
