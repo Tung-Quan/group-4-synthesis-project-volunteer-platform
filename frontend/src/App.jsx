@@ -16,7 +16,8 @@ import {
 
 import SearchResultsPage from './pages/SearchResultsPage.jsx';
 
-
+import ParticipatingPage from './pages/ParticipatingPage.jsx';
+import HistoryPage from './pages/HistoryPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home-logged-out'); 
@@ -132,6 +133,24 @@ function App() {
         />
       )}
 
+      {isLoggedIn && currentPage === 'participating-activities' && (
+        <ParticipatingPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+        />
+      )}
+
+      {isLoggedIn && currentPage === 'history-activities' && (
+        <HistoryPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+        />
+      )}
+      
     </>
   );
 }

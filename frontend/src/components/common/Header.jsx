@@ -14,6 +14,23 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
     setIsMobileMenuOpen(false); 
   };
   
+  const handlePersonalMenuClick = (item) => {
+    let targetPage = null;
+    if (item === 'Hoạt động đang tham gia') {
+      targetPage = 'participating-activities';
+    } else if (item === 'Lịch sử tham gia'){
+      targetPage = 'history-activities';
+    }
+    
+    if(!isLoggedIn && targetPage){
+      navigateTo('login', { redirectAfterLogin: targetPage });
+      return;
+    }
+    if (targetPage){
+      navigateTo(targetPage);
+    }
+     setIsMobileMenuOpen(false); 
+  }    
   const handleLoginButtonClick = () => {
     navigateTo('login');
     setIsMobileMenuOpen(false)
@@ -50,14 +67,14 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
       <div className="hidden md:flex items-center space-x-4">
         {isLoggedIn && user ? (
           <>
-            <DropdownMenu title="Cá nhân" items={personalMenuItems} />
+            <DropdownMenu title="Cá nhân" items={personalMenuItems} onMenuItemClick={handlePersonalMenuClick}/>
             <DropdownMenu title="Hoạt động" items={activityMenuItems} onMenuItemClick={handleActivityMenuClick} />
             <DropdownMenu title={user.display_name} items={userMenuItems} onMenuItemClick={handleUserMenuClick} />
           </>
         ) : (
           !isLoginPage && (
             <>
-              <DropdownMenu title="Cá nhân" items={personalMenuItems} />
+              <DropdownMenu title="Cá nhân" items={personalMenuItems} onMenuItemClick={handlePersonalMenuClick}/>
               <DropdownMenu 
                 title="Hoạt động" 
                 items={activityMenuItems} 
@@ -92,7 +109,7 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
             {isLoggedIn && user ? (
               
               <>
-                <DropdownMenu title="Cá nhân" items={personalMenuItems} />
+                <DropdownMenu title="Cá nhân" items={personalMenuItems} onMenuItemClick={handlePersonalMenuClick}/>
                 <DropdownMenu 
                   title="Hoạt động" 
                   items={activityMenuItems} 
@@ -107,7 +124,7 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
             ) : (
               
               <>
-                <DropdownMenu title="Cá nhân" items={personalMenuItems} />
+                <DropdownMenu title="Cá nhân" items={personalMenuItems} onMenuItemClick={handlePersonalMenuClick}/>
                 <DropdownMenu 
                   title="Hoạt động" 
                   items={activityMenuItems} 
