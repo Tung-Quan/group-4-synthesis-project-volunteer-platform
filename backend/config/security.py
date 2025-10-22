@@ -12,15 +12,26 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
+    # Ensure token has a type claim; default to 'access'
+    if "type" not in to_encode:
+        to_encode["type"] = "access"
+
     jwt_secret, jwt_algo, access_token_expire_minutes, _, _ = env_settings.get_jwt_secret()
 
+    # Use UTC times
+    now = datetime.utcnow()
     if expires_delta:
-        expire = datetime.now() + expires_delta
+        expire = now + expires_delta
     else:
-        expire = datetime.now() + timedelta(minutes=access_token_expire_minutes)
+        expire = now + timedelta(minutes=access_token_expire_minutes)
 
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, jwt_secret, algorithm=jwt_algo)
+    to_encode.update({"exp": expire, "iat": now})
+
+    # Support alg='none' explicitly
+    if isinstance(jwt_algo, str) and jwt_algo.lower() == "none":
+        encoded_jwt = jwt.encode(to_encode, key=None, algorithm=None)
+    else:
+        encoded_jwt = jwt.encode(to_encode, jwt_secret, algorithm=jwt_algo)
     return encoded_jwt
 
 def make_csrf() -> str:

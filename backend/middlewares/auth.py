@@ -2,20 +2,22 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import PlainTextResponse
 from typing import Callable
 from fastapi import Request
-from ..config.security import make_csrf, assert_csrf
+from ..config.security import make_csrf
+from ..dependencies import assert_csrf
 from ..config.env import env_settings
 from ..config.logger import logger
 import jwt
 
 PROTECTED_PREFIXES = ("/", "/dashboard", "/settings")  
-EXCLUDE_PATHS = {"/auth/login","/auth/register", "/auth/refresh", "/healthz", "/static", "/favicon.ico"}
-
+EXCLUDE_PATHS = {"/auth/login","/auth/register", "/auth/refresh", "/healthz", "/static", "/favicon.ico"
+                 ,"/users/profile/me"
+                 }
+    
 class PageAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable):
         path = request.url.path
         if any(path.startswith(prefix) for prefix in EXCLUDE_PATHS):
             return await call_next(request) 
-        
         # if any(path.startswith(prefix) for prefix in PROTECTED_PREFIXES):
         #     token = request.cookies.get("access_token")
         #     if not token:

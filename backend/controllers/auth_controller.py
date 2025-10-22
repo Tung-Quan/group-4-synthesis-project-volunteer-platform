@@ -9,7 +9,7 @@ import psycopg2
 def register(request: RegisterRequest) -> dict:
     # simple validation/normalization
     email = request.email.lower().strip()
-    valid_types = {'STUDENT', 'ORGANIZER'}
+    valid_types = {'STUDENT', 'ORGANIZER','BOTH'}
     # debug
     logger.debug(f"Registering user with email: {email}")
 
@@ -79,4 +79,5 @@ def logout(user_id: str) -> dict:
     # For JWT, logout is typically handled client-side by deleting tokens.
     # Optionally, implement token blacklisting here if needed.
     logger.info(f"User {user_id} logged out.")
+    
     return {"message": "Logout successful"}

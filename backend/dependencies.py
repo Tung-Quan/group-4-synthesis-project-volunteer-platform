@@ -39,7 +39,7 @@ def require_roles(*roles: str):
         if user_type not in roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, 
-                detail="User with roles '{user_type}' not authorized for roles: {roles}'"
+                detail=f"User with roles '{user_type}' not authorized for roles: {', '.join(roles)}'"
             )
         return current_user
     return role_checker
