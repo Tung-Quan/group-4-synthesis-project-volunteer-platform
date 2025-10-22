@@ -2,10 +2,10 @@ from ..models.event_models import CreateEventRequest, UpdateEventRequest
 from ..config.logger import logger
 from ..db.database import db
 from fastapi import Request
-from ..dependencies import assert_csrf
+from ..dependencies import verify_csrf
 # @app.get("/api/events")
 def events(request: Request):
-    assert_csrf(request)
+    verify_csrf(request)
     query = "SELECT id, title, description, start_time, end_time, location FROM events"
     events = db.execute_query_sync(query)
     if events:
@@ -26,7 +26,7 @@ def create_event(request: CreateEventRequest):
 
 # @app.put("/api/events")
 def update_event(request: UpdateEventRequest, req: Request):
-    assert_csrf(req)
+    verify_csrf(req)
     query = "SELECT created_by FROM events WHERE id = %s"
     event = db.fetch_one_sync(query, (request.event_id,))
     if not event:

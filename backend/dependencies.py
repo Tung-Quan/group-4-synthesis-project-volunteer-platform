@@ -18,20 +18,13 @@ async def get_current_user(req: Request) -> dict:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
     except jwt.PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
-    
+    # Assert user existence
     user = db.fetch_one_sync("SELECT * FROM users WHERE id = %s AND is_active = TRUE", (user_id,))
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
     
     return user
 
-# def require_roles(*roles: str):
-#     async def role_checker(current_user: dict = Depends(get_current_user)):
-#         user_type = current_user.get('type')
-#         if user_type not in roles or not both:
-#             raise HTTPException(403, "Insufficient role")
-#         return u
-#     return dep
 def require_roles(*roles: str):
     async def role_checker(current_user: dict = Depends(get_current_user)):
         user_type = current_user.get('type')
@@ -44,9 +37,9 @@ def require_roles(*roles: str):
         return current_user
     return role_checker
 
-def assert_csrf(request):
+def verify_csrf(request):
     session_token = request.session.get("csrf_token")
-    header_token = request.headers.get("X-CSRF-Token")
-    if not session_token or not header_token or session_token != header_token:
+    cookie_token = request.cookies.get("csrf_token")
+    if not session_token or not cookie_token or session_token != cookie_token:
         raise HTTPException(status_code=403, detail="CSRF token missing or invalid")
     return True

@@ -10,11 +10,11 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_access_token(data: dict, expires_delta: timedelta | None = None, token_type: str = "access"):
+    """Create a JWT with explicit token_type. The caller should pass token_type='access' or 'refresh'.
+    This avoids relying on the caller to include a 'type' field in `data` which could be overwritten.
+    """
     to_encode = data.copy()
-    # Ensure token has a type claim; default to 'access'
-    if "type" not in to_encode:
-        to_encode["type"] = "access"
 
     jwt_secret, jwt_algo, access_token_expire_minutes, _, _ = env_settings.get_jwt_secret()
 
@@ -25,7 +25,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     else:
         expire = now + timedelta(minutes=access_token_expire_minutes)
 
-    to_encode.update({"exp": expire, "iat": now})
+    # set type explicitly from parameter
+    to_encode.update({"exp": expire, "iat": now, "type": token_type})
 
     # Support alg='none' explicitly
     if isinstance(jwt_algo, str) and jwt_algo.lower() == "none":
