@@ -34,3 +34,13 @@ export const findUserByCredentials = (email, password) => {
   
   return null; 
 };
+
+export const getUserDisplayName = (id) => {
+  const user = mockUsers.find((user) => user.id === id);
+
+  if (user) {
+    return user.display_name;
+  }
+
+  return '';
+}

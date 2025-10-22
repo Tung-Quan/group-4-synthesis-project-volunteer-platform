@@ -4,7 +4,7 @@ const CloverIcon = () => (
   <span className="text-green-500 text-lg mr-2">🍀</span>
 );
 
-function ActivityDetailHeader({ activity, onRegisterClick, userType }) {
+function ActivityDetailDashboardHeader({ activity, onModifyClick, onDeleteClick }) {
   return (
     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
       
@@ -12,14 +12,20 @@ function ActivityDetailHeader({ activity, onRegisterClick, userType }) {
         <h1 className="text-xl font-bold">
           <span className="text-red-600">{activity.id}</span> - <span className="text-blue-700">{activity.title}</span>
         </h1>
-        {userType === 'VOLUNTEER' && 
+        <div className='justify-end space-x-2'>
         <button 
-          onClick={onRegisterClick}
+          onClick={onModifyClick}
           className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-colors duration-200 whitespace-nowrap"
         >
-          Đăng ký
+          Chỉnh sửa
         </button>
-        }
+        <button 
+          onClick={onDeleteClick}
+          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-colors duration-200 whitespace-nowrap"
+        >
+          Xóa
+        </button>
+        </div>
       </div>
 
       <div className="flex flex-col space-y-2 pt-4.">
@@ -42,4 +48,4 @@ function ActivityDetailHeader({ activity, onRegisterClick, userType }) {
   );
 }
 
-export default ActivityDetailHeader;
+export default ActivityDetailDashboardHeader;

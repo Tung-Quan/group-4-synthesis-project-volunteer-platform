@@ -3,9 +3,10 @@ import DropdownMenu from './DropdownMenu.jsx';
 
 function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const personalMenuItems = ['Hoạt động đang tham gia', 'Lịch sử tham gia'];
+  const volunteerMenuItems = ['Hoạt động đang tham gia', 'Lịch sử tham gia'];
   const activityMenuItems = ['Hoạt động đang diễn ra', 'Hoạt động mới'];
   const userMenuItems = ['Hồ sơ', 'Đăng xuất'];
+  const organizerMenuItems = ['Duyệt đơn đăng kí', 'Quản lý hoạt động'];
 
   const handleUserMenuClick = (item) => {
     if (item === 'Đăng xuất') {
@@ -16,15 +17,44 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
   
   const handleLoginButtonClick = () => {
     navigateTo('login');
-    setIsMobileMenuOpen(false)
+    setIsMobileMenuOpen(false);
   };
   
   const handleActivityMenuClick = (item) => {
     let targetPage = null;
-    if (item === 'Hoạt động mới') {
-      targetPage = 'new-activities';
-    }else if (item === 'Hoạt động đang diễn ra') {
-      targetPage = 'current-activities';
+    switch (item) {
+      //Activity info
+      //Allow both volunteers and organizers to see
+      case 'Hoạt động mới':
+        targetPage = 'new-activities'; //implemented
+        break;
+
+      case 'Hoạt động đang diễn ra':
+        targetPage = 'current-activities'; //implemented
+        break;
+
+      //Activity participation
+      //Only volunteers need to see this
+      case 'Hoạt động đang tham gia':
+        targetPage = 'participated-activities'; //not implemented yet
+        break;
+
+      case 'Lịch sử tham gia':
+        targetPage = 'activity-history'; //not implemented yet
+        break;
+
+      //Activity management
+      //Only organizers need to see this
+      case 'Duyệt đơn đăng kí':
+        targetPage = 'application-review';
+        break;
+
+      case 'Quản lý hoạt động':
+        targetPage = 'activity-dashboard';
+        break;
+    
+      default:
+        break;
     }
 
     if(!isLoggedIn && targetPage){
@@ -50,14 +80,23 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
       <div className="hidden md:flex items-center space-x-4">
         {isLoggedIn && user ? (
           <>
-            <DropdownMenu title="Cá nhân" items={personalMenuItems} />
-            <DropdownMenu title="Hoạt động" items={activityMenuItems} onMenuItemClick={handleActivityMenuClick} />
-            <DropdownMenu title={user.display_name} items={userMenuItems} onMenuItemClick={handleUserMenuClick} />
+            <DropdownMenu
+              title="Cá nhân"
+              items={user.type === 'VOLUNTEER' ? volunteerMenuItems : organizerMenuItems}
+              onMenuItemClick={handleActivityMenuClick}/>
+            <DropdownMenu
+              title="Hoạt động"
+              items={activityMenuItems}
+              onMenuItemClick={handleActivityMenuClick} />
+            <DropdownMenu
+              title={user.display_name}
+              items={userMenuItems}
+              onMenuItemClick={handleUserMenuClick} />
           </>
         ) : (
           !isLoginPage && (
             <>
-              <DropdownMenu title="Cá nhân" items={personalMenuItems} />
+              <DropdownMenu title="Cá nhân" items={volunteerMenuItems} />
               <DropdownMenu 
                 title="Hoạt động" 
                 items={activityMenuItems} 
@@ -92,7 +131,7 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
             {isLoggedIn && user ? (
               
               <>
-                <DropdownMenu title="Cá nhân" items={personalMenuItems} />
+                <DropdownMenu title="Cá nhân" items={volunteerMenuItems} />
                 <DropdownMenu 
                   title="Hoạt động" 
                   items={activityMenuItems} 
@@ -107,7 +146,7 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
             ) : (
               
               <>
-                <DropdownMenu title="Cá nhân" items={personalMenuItems} />
+                <DropdownMenu title="Cá nhân" items={volunteerMenuItems} />
                 <DropdownMenu 
                   title="Hoạt động" 
                   items={activityMenuItems} 

@@ -155,6 +155,26 @@ export const newActivities = [
     location: 'Khu A và Khu B Ký túc xá'
   },
 ];
+export const managedActivities = [
+  { 
+    id: 'MYBK001',
+    title: 'TNV HỖ TRỢ CÔNG TÁC VĂN PHÒNG ĐOÀN KHOA CƠ KHÍ',
+    date: '15/9/2025 đến 25/9/2025',
+    location: 'Cơ sở 1, P. Diễn Hồng' 
+  },
+  { 
+    id: 'MYBK002',
+    title: 'GIAN HÀNG CHÀO ĐÓN TSV Khóa 2025',
+    date: '05/09/2025',
+    location: 'Sân B1, CS1' 
+  },
+  { 
+    id: 'MYBK004',
+    title: 'CUỘC THI BK HACKATHON 2025',
+    date: '15/11/2025',
+    location: 'Nhà thi đấu Bách Khoa'
+  },
+];
 
 export const allActivitiesForSearch = Object.values(allActivitiesDetails).map(activity => ({
   id: activity.id,
@@ -162,6 +182,16 @@ export const allActivitiesForSearch = Object.values(allActivitiesDetails).map(ac
   date: activity.time,
   location: activity.locationDetail,
 }));
+
+export const getTitle = (id) => {
+  const activity = allActivitiesForSearch.find((activity) => activity.id === id);
+
+  if (activity) {
+    return activity.title;
+  }
+
+  return '';
+}
 
 // --- DỮ LIỆU CHO CÁC CẬP NHẬT GẦN ĐÂY ---
 export const recentUpdates = [

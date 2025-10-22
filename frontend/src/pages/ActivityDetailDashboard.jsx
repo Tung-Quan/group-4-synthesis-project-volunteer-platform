@@ -1,15 +1,19 @@
 import React from 'react';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
-import ActivityDetailHeader from '../components/activity/ActivityDetailHeader';
 import ActivityStats from '../components/activity/ActivityStats';
 import ActivityContent from '../components/activity/ActivityContent';
+import ActivityDetailDashboardHeader from '../components/activity/ActivityDetailDashboardHeader';
 
-function ActivityDetailPage({ navigateTo, onLogout, isLoggedIn, user, activity, previousPage }) {
+function ActivityDetailDashboard({ navigateTo, onLogout, isLoggedIn, user, activity, previousPage }) {
   
-  const handleRegisterClick = () => {
-    console.log(`Đăng ký hoạt động ID: ${activity.id}`);
-    alert(`Bạn đã đăng ký hoạt động "${activity.title}" (Đây là demo).`);
+  const handleModifyClick = () => {
+    console.log(`Chỉnh sửa hoạt động ID: ${activity.id}`);
+    alert(`Bạn đã sửa thông tin hoạt động "${activity.title}" (Đây là demo).`);
+  };
+  const handleDeleteClick = () => {
+    console.log(`Xóa hoạt động ID: ${activity.id}`);
+    alert(`Bạn đã xóa hoạt động "${activity.title}" (Đây là demo).`);
   };
 
   return (
@@ -32,10 +36,10 @@ function ActivityDetailPage({ navigateTo, onLogout, isLoggedIn, user, activity, 
           </button>
         </div>
         
-        <ActivityDetailHeader 
+        <ActivityDetailDashboardHeader
           activity={activity}
-          onRegisterClick={handleRegisterClick}
-          userType={user.type}
+          onModifyClick={handleModifyClick}
+          onDeleteClick={handleDeleteClick}
         />
 
         <div className="bg-white p-6 mt-6 rounded-x1 shadow-md border border-gray-200">
@@ -54,4 +58,4 @@ function ActivityDetailPage({ navigateTo, onLogout, isLoggedIn, user, activity, 
   );
 }
 
-export default ActivityDetailPage;
+export default ActivityDetailDashboard;
