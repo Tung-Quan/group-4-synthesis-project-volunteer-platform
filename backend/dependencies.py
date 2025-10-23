@@ -39,7 +39,7 @@ def require_roles(*roles: str):
 
 def verify_csrf(request):
     session_token = request.session.get("csrf_token")
-    cookie_token = request.cookies.get("csrf_token")
-    if not session_token or not cookie_token or session_token != cookie_token:
+    header_token = request.headers.get("X-CSRF-Token")
+    if not session_token or not header_token or session_token != header_token:
         raise HTTPException(status_code=403, detail="CSRF token missing or invalid")
     return True

@@ -66,12 +66,13 @@ def login(request: LoginRequest) -> dict:
         expires_delta=timedelta(minutes=refresh_token_expire_minutes),
         token_type="refresh",
     )
-
+    csrf_token = auth_controller.attach_csrf_token(request_obj.session)
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "user": {"id": user_id, "email": email}
+        "user": {"id": user_id, "email": email},
+        "csrf_token": csrf_token
     }
 
 def logout(request, response, user_id: str) -> dict:
@@ -79,19 +80,18 @@ def logout(request, response, user_id: str) -> dict:
     cookie_domain = getattr(ENV(), 'COOKIE_DOMAIN', None)
     try:
         response.delete_cookie(key="access_token", path='/', domain=cookie_domain)
-        response.delete_cookie(key="csrf_token", path='/', domain=cookie_domain)
+        response.delete_cookie(key="refresh_token", path='/', domain=cookie_domain)
         # response.delete_cookie(key="session", path='/', domain=cookie_domain) #delete session cookie
     except Exception:
         # fallback to simple deletion if domain/path fails
         response.delete_cookie(key="access_token")
-        response.delete_cookie(key="csrf_token")
+        response.delete_cookie(key="refresh_token")
         # response.delete_cookie(key="session
         # ") #delete session cookie
     try:
         # if "csrf_token" in request.session:
         #     request.session.pop("csrf_token", None)
         None
-        # request.session.clear()  # Xóa toàn bộ session
     except Exception:
         pass
 

@@ -21,27 +21,31 @@ def login_user(request: LoginRequest, response: Response,request_obj: Request):
     if "error" in result:
         raise HTTPException(status_code=result["status_code"], detail=result["error"])
     access_token = result.get("access_token")
+    refresh_token = result.get("refresh_token")
+    csrf_token = result.get("csrf_token")
     if access_token:
         response.set_cookie(
             key="access_token",
             value=access_token,
             httponly=True,
             secure=False, # Set to True in production with HTTPS
-            samesite="strict",
+            samesite="lax",
             max_age=env_settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )
-    # Attach CSRF token to session
-    csrf_token = auth_controller.attach_csrf_token(request_obj.session)
-    response.set_cookie(
-        key="csrf_token", 
-        value=csrf_token, 
-        httponly=True, 
-        secure=False, 
-        samesite="strict",
-        max_age=env_settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    )
-    result["csrf_token"] = csrf_token
-    return result
+    if refresh_token:
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=False,  # True ở production
+            samesite="lax",
+            max_age=env_settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60
+        )
+    return {
+        "token_type": "bearer",
+        "user": result["user"],
+        "csrf_token": csrf_token
+    }
 
 @router.post("/logout")
 def logout_user(request: Request, response: Response, current_user: dict = Depends(get_current_user)):
@@ -52,12 +56,28 @@ def logout_user(request: Request, response: Response, current_user: dict = Depen
 @router.get("/csrf")
 def get_csrf_token(request: Request, response: Response):
     csrf_token = auth_controller.attach_csrf_token(request.session)
-    response.set_cookie(
-        key="csrf_token",
-        value=csrf_token,
-        httponly=True,
-        secure=False,  # Localhost
-        samesite="strict",
-        max_age=env_settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    )
     return {"csrf_token": csrf_token}
+
+@router.post("/refresh")
+def refresh_token(request: Request, response: Response):
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="Refresh token missing")
+    
+    try:
+        payload = jwt.decode(refresh_token, env_settings.JWT_SECRET, algorithms=[env_settings.JWT_ALGO])
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        user_id = payload.get("sub")
+        access_token = create_access_token(data={"sub": user_id, "type": "access"})
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=False,  # True ở production
+            samesite="lax",
+            max_age=env_settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        )
+        return {"access_token": access_token, "token_type": "bearer"}
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
