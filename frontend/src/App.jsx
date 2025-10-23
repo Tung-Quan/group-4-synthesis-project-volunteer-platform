@@ -15,6 +15,7 @@ import {
   currentActivities,
   recentUpdates,
   managedActivities,
+  myActivities
 } from './mockdata/mockActivities.js';
 
 import SearchResultsPage from './pages/SearchResultsPage.jsx';
@@ -22,7 +23,8 @@ import { applicationDetails, getApplication } from './mockdata/mockApplications.
 import ActivityDashboard from './pages/ActivityDashboard.jsx';
 import ActivityDetailDashboard from './pages/ActivityDetailDashboard.jsx';
 
-
+import ParticipatingPage from './pages/ParticipatingPage.jsx';
+import HistoryPage from './pages/HistoryPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home-logged-out'); 
@@ -33,6 +35,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState(''); // State cho từ khóa tìm kiếm
   const [redirectAfterLogin, setRedirectAfterLogin] = useState(null); // State để lưu trang cần chuyển đến sau khi login
+  const organizerOnlyPages = ['application-review', 'activity-dashboard', 'activity-detail-dashboard'];
 
 
   const navigateTo = (page, params = {}) => {
@@ -54,9 +57,23 @@ function App() {
 
   const handleLoginSuccess = (loggedInUser) => {
     setIsLoggedIn(true);
-    setUser(loggedInUser);
-    setCurrentPage(redirectAfterLogin || 'home-logged-in');
-    setRedirectAfterLogin(null);
+  setUser(loggedInUser);
+  
+  let destinationPage = redirectAfterLogin || 'home-logged-in';
+
+  // === LOGIC PHÂN QUYỀN MỚI ===
+  // Nếu người dùng là VOLUNTEER...
+  if (loggedInUser.type === 'VOLUNTEER') {
+    // ...và họ đang cố gắng truy cập một trang của ORGANIZER...
+    if (organizerOnlyPages.includes(destinationPage)) {
+      // ...thì chuyển hướng họ về trang chủ mặc định.
+      console.warn(`Access denied: Volunteer cannot access '${destinationPage}'. Redirecting to home.`);
+      destinationPage = 'home-logged-in';
+    }
+  }
+  
+  setCurrentPage(destinationPage);
+  setRedirectAfterLogin(null);
 };
 
   const handleLogout = () => {
@@ -68,6 +85,10 @@ function App() {
 
   const selectedActivity = allActivitiesDetails[currentActivityId];
   const selectedApplication = getApplication(currentApplicationId);
+  // TÌM TRẠNG THÁI ĐĂNG KÝ CỦA NGƯỜI DÙNG CHO HOẠT ĐỘNG ĐANG XEM
+  const userApplicationStatus = myActivities.find(
+    activity => activity.id === currentActivityId
+  )?.status || null; // Dùng ?. (optional chaining) để an toàn
 
   return (
     <>
@@ -141,9 +162,28 @@ function App() {
           user={user}
           activity={selectedActivity}
           previousPage={previousPage}
+          applicationStatus={userApplicationStatus}
         />
       )}
 
+      {isLoggedIn && currentPage === 'participating-activities' && (
+        <ParticipatingPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+        />
+      )}
+
+      {isLoggedIn && currentPage === 'history-activities' && (
+        <HistoryPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+        />
+      )}
+      
       {/* Trang duyệt đơn ứng tuyển của organizer */}
       {isLoggedIn && currentPage === 'application-review' && (
         <ApplicationReviewPage

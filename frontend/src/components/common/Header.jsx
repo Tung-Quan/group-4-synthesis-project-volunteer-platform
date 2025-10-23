@@ -7,6 +7,8 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
   const activityMenuItems = ['Hoạt động đang diễn ra', 'Hoạt động mới'];
   const userMenuItems = ['Hồ sơ', 'Đăng xuất'];
   const organizerMenuItems = ['Duyệt đơn đăng kí', 'Quản lý hoạt động'];
+  // const personalMenuItems = ['Hoạt động đang tham gia', 'Lịch sử tham gia'];
+  const guestPersonalMenuItems = [...volunteerMenuItems, ...organizerMenuItems];
 
   const handleUserMenuClick = (item) => {
     if (item === 'Đăng xuất') {
@@ -15,6 +17,23 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
     setIsMobileMenuOpen(false); 
   };
   
+  const handlePersonalMenuClick = (item) => {
+    let targetPage = null;
+    // Volunteer actions
+    if (item === 'Hoạt động đang tham gia') targetPage = 'participating-activities';
+    if (item === 'Lịch sử tham gia') targetPage = 'history-activities';
+    
+    // Organizer actions
+    if (item === 'Duyệt đơn đăng kí') targetPage = 'application-review';
+    if (item === 'Quản lý hoạt động') targetPage = 'activity-dashboard';
+
+    if (!isLoggedIn && targetPage) {
+      navigateTo('login', { redirectAfterLogin: targetPage });
+    } else if (targetPage) {
+      navigateTo(targetPage);
+    }
+    setIsMobileMenuOpen(false);
+  }    
   const handleLoginButtonClick = () => {
     navigateTo('login');
     setIsMobileMenuOpen(false);
@@ -33,26 +52,6 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
         targetPage = 'current-activities'; //implemented
         break;
 
-      //Activity participation
-      //Only volunteers need to see this
-      case 'Hoạt động đang tham gia':
-        targetPage = 'participated-activities'; //not implemented yet
-        break;
-
-      case 'Lịch sử tham gia':
-        targetPage = 'activity-history'; //not implemented yet
-        break;
-
-      //Activity management
-      //Only organizers need to see this
-      case 'Duyệt đơn đăng kí':
-        targetPage = 'application-review';
-        break;
-
-      case 'Quản lý hoạt động':
-        targetPage = 'activity-dashboard';
-        break;
-    
       default:
         break;
     }
@@ -80,23 +79,14 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
       <div className="hidden md:flex items-center space-x-4">
         {isLoggedIn && user ? (
           <>
-            <DropdownMenu
-              title="Cá nhân"
-              items={user.type === 'VOLUNTEER' ? volunteerMenuItems : organizerMenuItems}
-              onMenuItemClick={handleActivityMenuClick}/>
-            <DropdownMenu
-              title="Hoạt động"
-              items={activityMenuItems}
-              onMenuItemClick={handleActivityMenuClick} />
-            <DropdownMenu
-              title={user.display_name}
-              items={userMenuItems}
-              onMenuItemClick={handleUserMenuClick} />
+            <DropdownMenu title={user.type === 'VOLUNTEER' ? 'Cá nhân' : 'Quản lý'} items={user.type === 'VOLUNTEER' ? volunteerMenuItems : organizerMenuItems} onMenuItemClick={handlePersonalMenuClick} />
+            <DropdownMenu title="Hoạt động" items={activityMenuItems} onMenuItemClick={handleActivityMenuClick} />
+            <DropdownMenu title={user.display_name} items={userMenuItems} onMenuItemClick={handleUserMenuClick} />
           </>
         ) : (
           !isLoginPage && (
             <>
-              <DropdownMenu title="Cá nhân" items={volunteerMenuItems} />
+              <DropdownMenu title="Cá nhân" items={guestPersonalMenuItems} onMenuItemClick={handlePersonalMenuClick}/>
               <DropdownMenu 
                 title="Hoạt động" 
                 items={activityMenuItems} 
@@ -131,7 +121,7 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
             {isLoggedIn && user ? (
               
               <>
-                <DropdownMenu title="Cá nhân" items={volunteerMenuItems} />
+                <DropdownMenu title={user.type === 'VOLUNTEER' ? 'Cá nhân' : 'Quản lý'} items={user.type === 'VOLUNTEER' ? volunteerMenuItems : organizerMenuItems} onMenuItemClick={handlePersonalMenuClick}/>
                 <DropdownMenu 
                   title="Hoạt động" 
                   items={activityMenuItems} 
@@ -146,7 +136,7 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user, navigateTo })
             ) : (
               
               <>
-                <DropdownMenu title="Cá nhân" items={volunteerMenuItems} />
+                <DropdownMenu title="Cá nhân" items={guestPersonalMenuItems} onMenuItemClick={handlePersonalMenuClick}/>
                 <DropdownMenu 
                   title="Hoạt động" 
                   items={activityMenuItems} 

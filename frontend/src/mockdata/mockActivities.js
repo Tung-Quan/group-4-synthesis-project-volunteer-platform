@@ -25,7 +25,7 @@ export const allActivitiesDetails = {
     title: 'GIAN HÀNG CHÀO ĐÓN TSV Khóa 2025',
     time: '05/09/2025',
     locationDetail: 'Sân B1, CS1',
-    stats: { maxDays: 1, approvedDays: 0, duration: 1 },
+    stats: { maxDays: 1, approvedDays: 1, duration: 1 },
     details: {
       type: 'Sự kiện',
       organizerUnit: 'Hội sinh viên',
@@ -110,6 +110,78 @@ export const allActivitiesDetails = {
       fileUrl: '#',
     }
   },
+  'MYBK007': {
+    id: 'MYBK007',
+    title: 'TỔ CHỨC TUYÊN TRUYỀN BẢO VỆ MÔI TRƯỜNG',
+    time: '05/10/2025',
+    locationDetail: 'Quảng trường trung tâm, CS1',
+    stats: { maxDays: 1, approvedDays: 0, duration: 1 },
+    details: {
+      type: 'Tình nguyện',
+      organizerUnit: 'CLB Môi trường',
+      content: 'Hoạt động tuyên truyền và phát tài liệu bảo vệ môi trường cho sinh viên.',
+      location: 'Quảng trường trung tâm, Cơ sở 1',
+      organizerName: 'Cô Phan Thị E',
+      organizerEmail: 'moi.truong@hcmut.edu.vn',
+      creationDate: '20/09/2025',
+      fileName: 'Tài liệu tuyên truyền.pdf',
+      fileUrl: '#',
+    }
+  },
+  'MYBK008': {
+    id: 'MYBK008',
+    title: 'KHÓA TẬP HUẤN KỸ NĂNG THUYẾT TRÌNH',
+    time: '12/10/2025',
+    locationDetail: 'Phòng 302, Tòa nhà A',
+    stats: { maxDays: 1, approvedDays: 0, duration: 1 },
+    details: {
+      type: 'Đào tạo',
+      organizerUnit: 'Phòng Đào tạo',
+      content: 'Tập huấn kĩ năng thuyết trình và phản biện cho sinh viên.',
+      location: 'Phòng 302, Tòa nhà A, Cơ sở 1',
+      organizerName: 'ThS. Vũ Thị F',
+      organizerEmail: 'training@hcmut.edu.vn',
+      creationDate: '25/09/2025',
+      fileName: 'Lịch chương trình.pdf',
+      fileUrl: '#',
+    }
+  },
+  'MYBK009': {
+    id: 'MYBK009',
+    title: 'KHÁM SỨC KHỎE MIỄN PHÍ CHO SINH VIÊN',
+    time: '02/11/2025',
+    locationDetail: 'Khoa Y tế cộng đồng - CS1',
+    stats: { maxDays: 1, approvedDays: 0, duration: 1 },
+    details: {
+      type: 'Dịch vụ cộng đồng',
+      organizerUnit: 'Trung tâm Y tế',
+      content: 'Khám sàng lọc và tư vấn sức khỏe miễn phí cho sinh viên.',
+      location: 'Khu khám sức khoẻ, Cơ sở 1',
+      organizerName: 'BS. Nguyễn Thùy G',
+      organizerEmail: 'health@hcmut.edu.vn',
+      creationDate: '01/10/2025',
+      fileName: 'Quy trình khám.pdf',
+      fileUrl: '#',
+    }
+  },
+  'MYBK010': {
+    id: 'MYBK010',
+    title: 'HƯỚNG DẪN KHỞI NGHIỆP - TALKSHOW',
+    time: '18/11/2025',
+    locationDetail: 'Hội trường B2, CS1',
+    stats: { maxDays: 1, approvedDays: 0, duration: 1 },
+    details: {
+      type: 'Talkshow',
+      organizerUnit: 'Vườn ươm khởi nghiệp',
+      content: 'Chia sẻ kinh nghiệm khởi nghiệp, kết nối mentor-investor.',
+      location: 'Hội trường B2, Cơ sở 1',
+      organizerName: 'Anh Phạm H',
+      organizerEmail: 'startup@hcmut.edu.vn',
+      creationDate: '05/11/2025',
+      fileName: 'Agenda.pdf',
+      fileUrl: '#',
+    }
+  },
 };
 
 // --- DANH SÁCH HOẠT ĐỘNG ĐANG DIỄN RA ---
@@ -132,6 +204,18 @@ export const currentActivities = [
     date: '30/10/2025',
     location: 'Hội trường A5, TPHCM'
   },
+  {
+    id: 'MYBK007',
+    title: 'TỔ CHỨC TUYÊN TRUYỀN BẢO VỆ MÔI TRƯỜNG',
+    date: '05/10/2025',
+    location: 'Quảng trường trung tâm, CS1'
+  },
+  {
+    id: 'MYBK009',
+    title: 'KHÁM SỨC KHỎE MIỄN PHÍ CHO SINH VIÊN',
+    date: '02/11/2025',
+    location: 'Khoa Y tế cộng đồng - CS1'
+  },
 ];
 
 // --- DANH SÁCH HOẠT ĐỘNG MỚI ---
@@ -153,6 +237,18 @@ export const newActivities = [
     title: 'DỌN DẸP KÝ TÚC XÁ CUỐI HỌC KỲ',
     date: '25/12/2025',
     location: 'Khu A và Khu B Ký túc xá'
+  },
+  {
+    id: 'MYBK008',
+    title: 'KHÓA TẬP HUẤN KỸ NĂNG THUYẾT TRÌNH',
+    date: '12/10/2025',
+    location: 'Phòng 302, Tòa nhà A'
+  },
+  {
+    id: 'MYBK010',
+    title: 'HƯỚNG DẪN KHỞI NGHIỆP - TALKSHOW',
+    date: '18/11/2025',
+    location: 'Hội trường B2, CS1'
   },
 ];
 export const managedActivities = [
@@ -198,4 +294,46 @@ export const recentUpdates = [
     'Hoạt động "TNV HỖ TRỢ CÔNG TÁC VĂN PHÒNG..." đã được cập nhật.',
     'Hoạt động "GIAN HÀNG CHÀO ĐÓN TSV Khóa 2025" đã hết hạn đăng ký.',
     'Hoạt động mới "CUỘC THI BK HACKATHON 2025" vừa được thêm.',
+  'Hoạt động "TỔ CHỨC TUYÊN TRUYỀN BẢO VỆ MÔI TRƯỜNG" sắp diễn ra vào 05/10/2025.',
+  'Chương trình "KHÁM SỨC KHỎE MIỄN PHÍ" vừa được đăng ký thêm nhiều tình nguyện viên.',
+  'Sự kiện "HƯỚNG DẪN KHỞI NGHIỆP - TALKSHOW" mở đăng ký online.'
+];
+
+export const myActivities = [
+  {
+    id: 'MYBK001',
+    title: 'TNV HỖ TRỢ CÔNG TÁC VĂN PHÒNG ĐOÀN KHOA CƠ KHÍ',
+    date: '15/9/2025 đến 25/9/2025',
+    location: 'Cơ sở 1, P. Diễn Hồng',
+    status: 'approved' // 'approved', 'pending', 'rejected'
+  },
+  {
+    id: 'MYBK004',
+    title: 'CUỘC THI BK HACKATHON 2025',
+    date: '15/11/2025',
+    location: 'Nhà thi đấu Bách Khoa',
+    status: 'pending'
+  },
+  {
+    id: 'MYBK007',
+    title: 'TỔ CHỨC TUYÊN TRUYỀN BẢO VỆ MÔI TRƯỜNG',
+    date: '05/10/2025',
+    location: 'Quảng trường trung tâm, CS1',
+    status: 'pending'
+  },
+  {
+    id: 'MYBK009',
+    title: 'KHÁM SỨC KHỎE MIỄN PHÍ CHO SINH VIÊN',
+    date: '02/11/2025',
+    location: 'Khoa Y tế cộng đồng - CS1',
+    status: 'approved'
+  },
+  {
+    id: 'MYBK002',
+    title: 'GIAN HÀNG CHÀO ĐÓN TSV Khóa 2025',
+    date: '05/09/2025',
+    location: 'Sân B1, CS1',
+    status: 'completed-attended', // 'completed-attended', 'completed-absent'
+    recordedDays: 1 // Số ngày CTXH đã được ghi nhận
+  },
 ];

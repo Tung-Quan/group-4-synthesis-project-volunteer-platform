@@ -5,11 +5,15 @@ import ActivityDetailHeader from '../components/activity/ActivityDetailHeader';
 import ActivityStats from '../components/activity/ActivityStats';
 import ActivityContent from '../components/activity/ActivityContent';
 
-function ActivityDetailPage({ navigateTo, onLogout, isLoggedIn, user, activity, previousPage }) {
+function ActivityDetailPage({ navigateTo, onLogout, isLoggedIn, user, activity, previousPage , applicationStatus}) {
   
   const handleRegisterClick = () => {
     console.log(`Đăng ký hoạt động ID: ${activity.id}`);
     alert(`Bạn đã đăng ký hoạt động "${activity.title}" (Đây là demo).`);
+  };
+
+  const handleCancelClick = () => {
+    alert(`Bạn có chắc muốn hủy đăng ký hoạt động ${activity.id}? (Đây là demo)`);
   };
 
   return (
@@ -36,6 +40,8 @@ function ActivityDetailPage({ navigateTo, onLogout, isLoggedIn, user, activity, 
           activity={activity}
           onRegisterClick={handleRegisterClick}
           userType={user.type}
+          applicationStatus={applicationStatus}
+          onCancelClick={handleCancelClick}
         />
 
         <div className="bg-white p-6 mt-6 rounded-x1 shadow-md border border-gray-200">
