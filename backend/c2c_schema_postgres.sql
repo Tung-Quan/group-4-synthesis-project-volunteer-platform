@@ -11,15 +11,17 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- ENUM Types
 -- =========================
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_type') THEN
-    CREATE TYPE user_type  AS ENUM ('STUDENT','ORGANIZER','BOTH');
-  END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'event_status') THEN
     CREATE TYPE event_status AS ENUM ('OPEN','CLOSED','ARCHIVED');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_status') THEN
     CREATE TYPE app_status AS ENUM ('PENDING','APPROVED','REJECTED','CANCELLED');
   END IF;
+  IF NOT EXISTS( SELECT 1 FROM pg_type WHERE typname = 'participation_status') THEN 
+  CREATE TYPE participation_status AS ENUM
+    ('applied','approved','rejected','attended','absent','withdrawn');
+  END IF;
+
 END $$;
 
 -- =========================
@@ -34,6 +36,18 @@ CREATE TABLE IF NOT EXISTS users (
   is_active     boolean NOT NULL DEFAULT true,
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS students (
+  user_id           UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  student_id        TEXT NOT NULL UNIQUE,                -- mã SV
+  social_work_days  INT  NOT NULL DEFAULT 0 CHECK (social_work_days >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS organizers (
+  user_id   UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  org_id    TEXT NOT NULL UNIQUE,                        -- mã tổ chức
+  org_name  TEXT                                         -- tuỳ chọn: tên hiển thị của tổ chức
 );
 
 CREATE TABLE IF NOT EXISTS events (
@@ -53,6 +67,17 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_creator ON events(created_by);
 CREATE INDEX IF NOT EXISTS idx_events_time    ON events(starts_at, ends_at);
 CREATE INDEX IF NOT EXISTS idx_events_status  ON events(status);
+
+CREATE TABLE IF NOT EXISTS student_event_participations (
+  event_id          UUID NOT NULL REFERENCES events(id)   ON DELETE CASCADE,
+  student_user_id   UUID NOT NULL REFERENCES students(user_id) ON DELETE CASCADE,
+  status            participation_status NOT NULL DEFAULT 'applied',
+  applied_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (event_id, student_user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_participations_student
+  ON student_event_participations (student_user_id);
 
 CREATE TABLE IF NOT EXISTS applications (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),

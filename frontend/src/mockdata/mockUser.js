@@ -3,7 +3,7 @@ const mockUsers = [
     id: 'user-org-123',
     email: 'organizer@hcmut.edu.vn', 
     password: 'password123',
-    display_name: 'BAN TỔ CHỨC',
+    display_name: 'ORGANIZER',
     type: 'ORGANIZER',
   },
   {
@@ -34,3 +34,13 @@ export const findUserByCredentials = (email, password) => {
   
   return null; 
 };
+
+export const getUserDisplayName = (id) => {
+  const user = mockUsers.find((user) => user.id === id);
+
+  if (user) {
+    return user.display_name;
+  }
+
+  return '';
+}

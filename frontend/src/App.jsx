@@ -6,15 +6,22 @@ import LoginPage from './pages/LoginPage';
 import NewActivitiesPage from './pages/NewActivitiesPage';
 import CurrentActivitiesPage from './pages/CurrentActivitiesPage'; 
 import ActivityDetailPage from './pages/ActivityDetailPage';
+import ApplicationReviewPage from './pages/ApplicationReviewPage';
+import ApplicationDetailPage from './pages/ApplicationDetailPage';
  
 import { 
   allActivitiesDetails, 
   newActivities, 
   currentActivities,
-  recentUpdates
+  recentUpdates,
+  managedActivities,
+  myActivities
 } from './mockdata/mockActivities.js';
 
 import SearchResultsPage from './pages/SearchResultsPage.jsx';
+import { applicationDetails, getApplication } from './mockdata/mockApplications.js';
+import ActivityDashboard from './pages/ActivityDashboard.jsx';
+import ActivityDetailDashboard from './pages/ActivityDetailDashboard.jsx';
 
 import ParticipatingPage from './pages/ParticipatingPage.jsx';
 import HistoryPage from './pages/HistoryPage';
@@ -23,30 +30,50 @@ function App() {
   const [currentPage, setCurrentPage] = useState('home-logged-out'); 
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Trạng thái đăng nhập
   const [currentActivityId, setCurrentActivityId] = useState(null);
+  const [currentApplicationId, setCurrentApplicationId] = useState(null);
   const [previousPage, setPreviousPage] = useState(null);
   const [user, setUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState(''); // State cho từ khóa tìm kiếm
   const [redirectAfterLogin, setRedirectAfterLogin] = useState(null); // State để lưu trang cần chuyển đến sau khi login
+  const organizerOnlyPages = ['application-review', 'activity-dashboard', 'activity-detail-dashboard'];
 
 
   const navigateTo = (page, params = {}) => {
     setPreviousPage(currentPage);
     if (page === 'login' && params.redirectAfterLogin) {
-    setRedirectAfterLogin(params.redirectAfterLogin);
+      setRedirectAfterLogin(params.redirectAfterLogin);
     } 
     setCurrentPage(page);
     if (page === 'activity-detail' && params.id) {
       setCurrentActivityId(params.id);
-    }if (page === 'search-results' && params.query) {
+    }
+    if (page === 'application-detail' && params.id) {
+      setCurrentApplicationId(params.id);
+    }
+    if (page === 'search-results' && params.query) {
       setSearchQuery(params.query);
     }
   };
 
   const handleLoginSuccess = (loggedInUser) => {
     setIsLoggedIn(true);
-    setUser(loggedInUser); 
-    setCurrentPage(redirectAfterLogin || 'home-logged-in');
-    setRedirectAfterLogin(null);
+  setUser(loggedInUser);
+  
+  let destinationPage = redirectAfterLogin || 'home-logged-in';
+
+  // === LOGIC PHÂN QUYỀN MỚI ===
+  // Nếu người dùng là VOLUNTEER...
+  if (loggedInUser.type === 'VOLUNTEER') {
+    // ...và họ đang cố gắng truy cập một trang của ORGANIZER...
+    if (organizerOnlyPages.includes(destinationPage)) {
+      // ...thì chuyển hướng họ về trang chủ mặc định.
+      console.warn(`Access denied: Volunteer cannot access '${destinationPage}'. Redirecting to home.`);
+      destinationPage = 'home-logged-in';
+    }
+  }
+  
+  setCurrentPage(destinationPage);
+  setRedirectAfterLogin(null);
 };
 
   const handleLogout = () => {
@@ -57,6 +84,11 @@ function App() {
   };
 
   const selectedActivity = allActivitiesDetails[currentActivityId];
+  const selectedApplication = getApplication(currentApplicationId);
+  // TÌM TRẠNG THÁI ĐĂNG KÝ CỦA NGƯỜI DÙNG CHO HOẠT ĐỘNG ĐANG XEM
+  const userApplicationStatus = myActivities.find(
+    activity => activity.id === currentActivityId
+  )?.status || null; // Dùng ?. (optional chaining) để an toàn
 
   return (
     <>
@@ -78,7 +110,7 @@ function App() {
       )}
 
       {/* HomePageLoggedIn*/}
-      {isLoggedIn && currentPage === 'home-logged-in' && (
+      {isLoggedIn && (currentPage === 'home-logged-in') && (
         <HomePageLoggedIn
           navigateTo={navigateTo}
           onLogout={handleLogout}
@@ -130,6 +162,7 @@ function App() {
           user={user}
           activity={selectedActivity}
           previousPage={previousPage}
+          applicationStatus={userApplicationStatus}
         />
       )}
 
@@ -151,6 +184,51 @@ function App() {
         />
       )}
       
+      {/* Trang duyệt đơn ứng tuyển của organizer */}
+      {isLoggedIn && currentPage === 'application-review' && (
+        <ApplicationReviewPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+          applications={applicationDetails}
+        />
+      )}
+
+      {/* Trang Chi tiết đơn ứng tuyển */}
+      {isLoggedIn && currentPage === 'application-detail' && (
+        <ApplicationDetailPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+          application={selectedApplication}
+          previousPage={previousPage}
+        />
+      )}
+
+      
+      {/* Trang quản lý các hoạt động của organizer */}
+      {isLoggedIn && currentPage === 'activity-dashboard' && (
+        <ActivityDashboard
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+          activities={managedActivities}
+        />
+      )}
+      {isLoggedIn && currentPage === 'activity-detail-dashboard' && selectedActivity && (
+        <ActivityDetailDashboard
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+          activity={selectedActivity}
+          previousPage={previousPage}
+        />
+      )}
+
     </>
   );
 }
