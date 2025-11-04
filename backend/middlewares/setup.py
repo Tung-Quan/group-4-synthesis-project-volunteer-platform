@@ -2,11 +2,11 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from .auth import PageAuthMiddleware, CSRFMiddleware
+# from .auth import PageAuthMiddleware, CSRFMiddleware
+from .auth import CSRFMiddleware
 from ..config.env import env_settings
 from ..config.logger import logger
 from datetime import datetime
-
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -45,24 +45,27 @@ def setup_middlewares(app: FastAPI):
     """Register middlewares in a predictable order. SessionMiddleware must be added
     before any middleware that accesses request.session (CSRFMiddleware depends on it).
     """
-    # IMPORTANT: SessionMiddleware must be installed first so request.session exists
-    app.add_middleware(SessionMiddleware, secret_key=env_settings.JWT_SECRET)
-
-    # CORS can be added next
+    # CORS can be added first
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[env_settings.API_ORIGIN] if env_settings.API_ORIGIN else [],
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "x-csrf"],
+        allow_headers=["Authorization", "Content-Type", "X-CSRF-Token"],
     )
-
+    logger.info("CORSMiddleware added.")
     # Add custom middlewares that rely on sessions or authentication
     app.add_middleware(CSRFMiddleware)
-    app.add_middleware(PageAuthMiddleware)
-
+    logger.info("CSRFMiddleware added.")
+    # IMPORTANT: SessionMiddleware must be installed before any middleware that accesses
+    # request.session at runtime. Because Starlette's add_middleware builds the stack
+    # such that the last added middleware is executed first, we add SessionMiddleware
+    # after CSRFMiddleware so its runtime execution precedes CSRFMiddleware.
+    app.add_middleware(SessionMiddleware, secret_key=env_settings.JWT_SECRET)
+    logger.info("SessionMiddleware added.")
     # Security headers as a middleware added last so it can update the response
     app.add_middleware(SecurityHeadersMiddleware)
+    logger.info("SecurityHeadersMiddleware added.")
 
 
     

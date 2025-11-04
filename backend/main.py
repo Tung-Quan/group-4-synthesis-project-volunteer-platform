@@ -24,11 +24,11 @@ setup_middlewares(app)
 #- api endpoints desgin -
 #========================
 from .routes.auth_route import router as auth_router
-# from .routes.user_route import router as user_router
+from .routes.user_route import router as user_router
 from .routes.events_route import router as events_router
 
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
-# app.include_router(user_router:=fastapi.APIRouter(prefix="/users", tags=["Users"]))
+app.include_router(user_router, prefix="/users", tags=["Users"])
 app.include_router(events_router, prefix="/events", tags=["Events"])
 
 """
