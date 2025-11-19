@@ -20,13 +20,6 @@ def get_event_by_id(id: str):
     return result
 
 @router.post("/")
-def post_event(request: CreateEventRequest, current_user: dict = Depends(get_current_user)):
-    result = create_event(request, str(current_user["id"]))
-    if  result is None:
-        raise HTTPException(status_code=status.HTTP_424_FAILED_DEPENDENCY)
-    return result
-
-@router.post("/")
 def create_event_route(request: CreateEventRequest, current_user: dict = Depends(get_current_user)):
     if current_user["type"] not in ("BOTH", "ORGANIZER"):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
@@ -37,7 +30,7 @@ def create_event_route(request: CreateEventRequest, current_user: dict = Depends
     return result
 
 
-@router.patch("/")
+@router.patch("/{id}")
 def update_event_route(request: UpdateEventRequest, current_user: dict = Depends(get_current_user)):
     result, status_code = update_event(request, str(current_user["id"]))
     if status_code != 200:

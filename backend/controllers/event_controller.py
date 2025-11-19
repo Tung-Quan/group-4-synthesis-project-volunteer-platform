@@ -6,7 +6,6 @@ from ..dependencies import verify_csrf
 import json
 
 def events():
-    # verify_csrf(request)
     query = """SELECT id, title, description, starts_at, ends_at, capacity, location FROM events"""
     events = db.execute_query_sync(query)
     if not events:
@@ -39,23 +38,30 @@ def create_event(request, organizer_id):
         return None
     return {"event_id":event_id[0]["id"]}
 
-def update_event(request, organizer_id):
+def update_event(request, organizer_id): #! Later check
     query = """
             SELECT created_by FROM events WHERE id = %s;
             """
-    event = db.fetch_one_sync(query, (organizer_id,))
+    event = db.fetch_one_sync(query, (request.event_id,))
     if not event:
         return {"message": "Not Found"}, 404
     if event["created_by"] != organizer_id:
         return {"message": "Unauthorized"}, 401
     
-    params = list(request.model_dump().values())
-    params.append(request.event_id)
+    params = [request.title, request.description, request.location, request.starts_at, request.ends_at, request.capacity, request.event_id]
 
     update_query = """
         UPDATE events
-        SET {', '.join(updates)}, updated_at = now()
-        WHERE id = %s;
+        SET 
+            title = %s,
+            description = %s,
+            location = %s,
+            starts_at = %s,
+            ends_at = %s,
+            capacity = %s,
+            updated_at = now()
+        WHERE id = %s
+        RETURNING id,
     """
 
     results = db.execute_query_sync(update_query, tuple(params))
@@ -114,7 +120,6 @@ def apply_event(request, applicant_id):
         return {"message": "Failed registration. Please try again"}, 500
     return {"message": result[0]["id"]}, 201
 
-#@app.post("/api/review_application")
 def review_application(request, organizer_id):
     app_query = """
                 SELECT 
