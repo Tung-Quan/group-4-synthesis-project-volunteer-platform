@@ -3,87 +3,97 @@ from ..config.logger import logger
 from ..db.database import db
 from fastapi import Request
 from ..dependencies import verify_csrf
-# @app.get("/api/events")
-def events(request: Request):
-    verify_csrf(request)
-    query = "SELECT id, title, description, start_time, end_time, location FROM events"
+import json
+
+def events():
+    # verify_csrf(request)
+    query = """SELECT id, title, description, starts_at, ends_at, capacity, location FROM events"""
     events = db.execute_query_sync(query)
-    if events:
-        return {"events": events}, 200
-    return {"message": "No events found"}, 404
+    if not events:
+        return None
+    return events
 
-# @app.post("/api/events")
-def create_event(request: CreateEventRequest):
-    check_role = f"""
-        SELECT type FROM users WHERE id = '{request.organizer_id}'
-    """
-    user = db.execute_query(check_role)
-    if not user or user[0]['type'] not in ("BOTH", "ORGANIZER"):
-        return {"message": "You have no permission to this operation."}, 403
-    
-    query = f"""
-    INSERT INTO events (title, description, location, starts_at, ends_at, capacity, created_by)
-    VALUES ('{request.title}', '{request.description}', '{request.location}', '{request.starts_at}', '{request.ends_at}', {request.capacity}, '{request.organizer_id}')
-    RETURNING id;
-    """
-    event_id = db.execute_query(query)
-    if event_id:
-        return {"message": "Event created successfully", "event_id": event_id[0]['id']}, 201
-    return {"message": "Failed to create event"}, 500
-
-# @app.put("/api/events")
-def update_event(request: UpdateEventRequest, req: Request):
-    verify_csrf(req)
-    query = "SELECT created_by FROM events WHERE id = %s"
-    event = db.fetch_one_sync(query, (request.event_id,))
+def event_id(id: str):
+    query = """
+            SELECT id, title, description, starts_at, ends_at, capacity, location 
+            FROM events
+            WHERE id = %s
+            """
+    event = db.fetch_one_sync(query, (id,))
     if not event:
-        return {"message": "Event not found"}, 404
-    if event['created_by'] != request.organizer_id:
-        return {"message": "Unauthorized"}, 403
+        return None
+    return event
 
-    query = """UPDATE events
-    SET title = %s,
-        description = %s,
-        location = %s,
-        starts_at = %s,
-        ends_at = %s,
-        capacity = %s,
-        updated_at = now()
-    WHERE id = %s;"""
+def create_event(request, organizer_id):
+    params = list(request.model_dump().values()) # Convert the model into params without typing manually
+    params.append(organizer_id)
 
-    success = db.execute_query_sync(query, (request.title, request.description, request.location, request.starts_at, request.ends_at, request.capacity, request.event_id))
-    if success is not None:
-        return {"message": "Event updated successfully"}, 200
-    
-    return {"message": "Failed to update event"}, 500
+    query = """
+            INSERT INTO events (title, description, location, starts_at, ends_at, capacity, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id;
+            """
+    event_id = db.execute_query_sync(query, tuple(params))
 
-# @app.post("/api/apply_event")
-def apply_event(request: ApplyEvent):
-    check_query = f"""
-        SELECT id FROM applications 
-        WHERE event_id = '{request.event_id}' AND applicant_id = '{request.applicant_id}';
-    """
-    check_exist = db.execute_query(check_query)
-    if check_exist and len(check_exist) > 0:
-        return {"message": "You have already registered this event"}, 400
+    if not event_id:
+        return None
+    return {"event_id":event_id[0]["id"]}
+
+def update_event(request, organizer_id):
+    query = """
+            SELECT created_by FROM events WHERE id = %s;
+            """
+    event = db.fetch_one_sync(query, (organizer_id,))
+    if not event:
+        return {"message": "Not Found"}, 404
+    if event["created_by"] != organizer_id:
+        return {"message": "Unauthorized"}, 401
     
-    slot_query = f"""
-        SELECT capacity FROM events WHERE id = '{request.event_id}'
+    params = list(request.model_dump().values())
+    params.append(request.event_id)
+
+    update_query = """
+        UPDATE events
+        SET {', '.join(updates)}, updated_at = now()
+        WHERE id = %s;
     """
-    slot = db.execute_query(slot_query)
-    if not slot:
-        return {"message": "Event not found."}, 404
-    capacity = slot[0][0]
+
+    results = db.execute_query_sync(update_query, tuple(params))
+    if not results:
+        return {"message": "Failed to update event"}, 500
+    return {"message":"Event updated successfully"}, 200
+
+def apply_event(request, applicant_id):
+    slot_query = """
+                SELECT capacity
+                FROM events
+                WHERE id = %s
+                """
+    event = db.fetch_one_sync(slot_query, (request.event_id,))
+    if not event:
+        return {"message":"Event Not Found."}, 404
     
-    count_query = f"""
-        SELECT COUNT(*) FROM applications
-        WHERE event_id = '{request.event_id}'
-    """
-    count = db.execute_query(count_query)
-    current = count[0][0] if count else 0
+    params = [applicant_id, request.event_id]
+    check_query = """
+                SELECT id
+                FROM applications
+                WHERE event_id = %s AND application_id = %s
+                """
+    existing = db.fetch_one_sync(check_query, tuple(params))
+    if existing:
+        return {"message":"Already registered this event"}, 400
+    
+    count_query = """
+                SELECT COUNT(*) AS current_count
+                FROM applications
+                WHERE event_id = %s
+                """
+    count_row = db.fetch_one_sync(count_query, (request.event_id,))
+    current = count_row["current_count"] if count_row else 0
+    capacity = event["capacity"]
 
     if current >= capacity:
-        return {"message": "Event slots are full. Failed registration."}, 400
+        return {"message":"Full slot. Falied registration"}, 500
     
     note_json = {
         "name": request.name,
@@ -93,55 +103,54 @@ def apply_event(request: ApplyEvent):
     }
     note_str = json.dumps(note_json)
 
-    register_query = f"""
-        INSERT INTO applications (event_id, applicant_id, note)
-        VALUES ('{request.event_id}', '{request.applicant_id}', '{note_str}')
-        RETURNING id;
-    """
-    result = db.execute_query(register_query)
-    if result:
-        return {"message": "Success Registration!"}, 201
-    return {"message": "Failed Registration. Please try again."}, 500
+    regis_params = [request.event_id, request.applicant_id, note_str]
+    regis_query = """
+                INSERT INTO applications (event_id, applicant_id, note)
+                VALUES (%s, %s, %s)
+                RETURNING id;
+                """
+    result = db.execute_query_sync(regis_query, tuple(regis_params))
+    if not result:
+        return {"message": "Failed registration. Please try again"}, 500
+    return {"message": result[0]["id"]}, 201
 
 #@app.post("/api/review_application")
-def review_application(request: ReviewApplication):
-    check_role = f"SELECT type FROM users WHERE id = '{request.organizer_id}'"
-    user = db.execute_query_sync(check_role)
-    if not user or user[0]['type'] not in ("BOTH", "ORGANIZER"):
-        return {"message": "You have no permission to this operation."}, 403
+def review_application(request, organizer_id):
+    app_query = """
+                SELECT 
+                a.id AS application_id,
+                a.status,
+                e.created_by AS event_organizer
+                FROM applications a
+                JOIN events e ON e.id = a.event_id
+                WHERE a.id = %s
+                """
+    app = db.fetch_one_sync(app_query, (request.application_id,))
+    if not app:
+        return {"message": "Application Not Found"}, 404
+    if app["status"] != "PENDING":
+        return {"message": "Application has already been approved"}, 400
+    if app["event_organizer"] != organizer_id:
+        return {"message": "Unauthorized"}, 401
     
-    query= f"""
-        SELECT id, status, created_by AS organizer
-        FROM applications a
-        JOIN events e ON e.id = a.event_id
-        WHERE a.id = '{request.application_id}';
-    """
-    app = db.execute_query_sync(query)
+    new_status = "APPROVED" if request.approve else "REJECTED"
 
-    app = app[0]
-    if app["status"] not in ("PENDING",):
-        return {"message": f"Application already {app['status']}."}, 400
-    
-    if app["organzier"] != request.organizer_id:
-        return {"message": "You are not the organizer of this event."}, 403
-    
-    new_status = "APRROVED" if request.approve else "REJECTED"
-    update_query = f"""
-        UPDATE applications
-        SET status = '{new_status}',
-            reason = %s,
-            decided_by = '{request.organizer_id}',
-            decided_at = now()
-        WHERE id = '{request.application_id}'
-        RETURNING applicant_id;
-    """
-    result = db.execute_query_sync(update_query, (request.reason,))
+    update_query = """
+                UPDATE applications
+                SET 
+                    status = %s,
+                    reason = %s,
+                    decided_by = %s,
+                    decided_at = now()
+                WHERE id = %s
+                """
+    update_params = [new_status, request.reason, organizer_id, request.application_id]
+    result = db.execute_query_sync(update_query, tuple(update_params))
     if not result:
-        return {"message": "Failed to update the status of application."}
-    return {"message": f"Application {new_status.lower()} successfully."}, 200
-
-# @app.post("/api/check_attendance")
-def check_attendance(request: CheckingAttendance):
+        return {"message": "Failed to update application status"}, 500
+    return {"message": f"Application {new_status} successfully"}, 200
+    
+def check_attendance(request):
     check_role = f"SELECT type FROM users WHERE id = '{request.organizer_id}'"
     user = db.execute_query(check_role)
     if not user or user[0][0] not in ("BOTH","ORGANIZER"):
@@ -157,3 +166,29 @@ def check_attendance(request: CheckingAttendance):
     if result:
         return {"message": "Attendance updated!"}, 200
     return {"message": "Failed to update attendance."}, 500
+
+def cancel_application(request: CancelApplication, applicant_id: str):
+    query = """
+        SELECT status
+        FROM applications
+        WHERE id = %s AND applicant_id = %s
+    """
+    app = db.fetch_one_sync(query, (request.application_id, applicant_id))
+    if not app:
+        return {"message": "Application not found"}, 404
+    if app["status"] != "PENDING":
+        return {"message": f"Cannot cancel an application that is {app['status']}"}, 400
+
+    update_query = """
+        UPDATE applications
+        SET status = 'CANCELLED',
+            decided_at = now(),
+        WHERE id = %s
+    """
+
+    result = db.execute_query_sync(update_query, (request.application_id,))
+
+    if not result:
+        return {"message": "Failed to cancel application"}, 500
+
+    return {"message": "Application cancelled successfully"}, 200
