@@ -72,6 +72,7 @@ def login(request: LoginRequest) -> dict:
         "refresh_token": refresh_token,
         "token_type": "bearer",
         "user": {"id": user_id, "email": email},
+        # "csrf_token": csrf_token
     }
 
 def logout(request, response, user_id: str) -> dict:
