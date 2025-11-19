@@ -5,14 +5,14 @@ from fastapi import Request
 from ..dependencies import verify_csrf
 import json
 
-def events():
+def events(): #* DONE!
     query = """SELECT id, title, description, starts_at, ends_at, capacity, location FROM events"""
     events = db.execute_query_sync(query)
     if not events:
         return None
     return events
 
-def event_id(id: str):
+def event_id(id: str): #* DONE!
     query = """
             SELECT id, title, description, starts_at, ends_at, capacity, location 
             FROM events
@@ -23,7 +23,7 @@ def event_id(id: str):
         return None
     return event
 
-def create_event(request, organizer_id):
+def create_event(request, organizer_id): #* DONE!
     params = list(request.model_dump().values()) # Convert the model into params without typing manually
     params.append(organizer_id)
 
@@ -69,7 +69,7 @@ def update_event(request, organizer_id): #! Later check
         return {"message": "Failed to update event"}, 500
     return {"message":"Event updated successfully"}, 200
 
-def apply_event(request, applicant_id):
+def apply_event(request, applicant_id): #* DONE!
     slot_query = """
                 SELECT capacity
                 FROM events
@@ -79,11 +79,11 @@ def apply_event(request, applicant_id):
     if not event:
         return {"message":"Event Not Found."}, 404
     
-    params = [applicant_id, request.event_id]
+    params = [request.event_id, applicant_id]
     check_query = """
                 SELECT id
                 FROM applications
-                WHERE event_id = %s AND application_id = %s
+                WHERE event_id = %s AND applicant_id = %s
                 """
     existing = db.fetch_one_sync(check_query, tuple(params))
     if existing:
@@ -109,7 +109,7 @@ def apply_event(request, applicant_id):
     }
     note_str = json.dumps(note_json)
 
-    regis_params = [request.event_id, request.applicant_id, note_str]
+    regis_params = [request.event_id, applicant_id, note_str]
     regis_query = """
                 INSERT INTO applications (event_id, applicant_id, note)
                 VALUES (%s, %s, %s)
@@ -172,7 +172,7 @@ def check_attendance(request):
         return {"message": "Attendance updated!"}, 200
     return {"message": "Failed to update attendance."}, 500
 
-def cancel_application(request: CancelApplication, applicant_id: str):
+def cancel_application(request, applicant_id: str): #* DONE!
     query = """
         SELECT status
         FROM applications
@@ -187,11 +187,12 @@ def cancel_application(request: CancelApplication, applicant_id: str):
     update_query = """
         UPDATE applications
         SET status = 'CANCELLED',
-            decided_at = now(),
-        WHERE id = %s
+            decided_at = now()
+        WHERE id = %s and applicant_id = %s
+        RETURNING id, applicant_id;
     """
 
-    result = db.execute_query_sync(update_query, (request.application_id,))
+    result = db.execute_query_sync(update_query, (request.application_id, applicant_id))
 
     if not result:
         return {"message": "Failed to cancel application"}, 500

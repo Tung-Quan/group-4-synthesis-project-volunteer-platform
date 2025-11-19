@@ -30,7 +30,7 @@ class UpdateEventRequest(BaseModel):
 
 class ApplyEvent(BaseModel):
     event_id: str
-    applicant_id: str
+    # applicant_id: str
     name: str
     department: str
     email: str
