@@ -22,7 +22,7 @@ function AboutAndCTASection({ navigateTo }) {
         <div className="border-2 border-dashed border-gray-400 rounded-lg p-6 text-center">
           <p className="text-base font-medium text-gray-700 mb-2">SẴN SÀNG TẠO KHÁC BIỆT CHƯA</p>
           <button
-            onClick={() => navigateTo('login')}
+            onClick={() => navigateTo('/login')}
             className="text-2xl font-extrabold text-blue-700 hover:text-blue-500 transition-colors duration-200 cursor-pointer"
           >
             ĐĂNG NHẬP NGAY

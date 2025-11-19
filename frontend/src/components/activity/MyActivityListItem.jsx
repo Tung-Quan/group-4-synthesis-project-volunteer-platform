@@ -1,6 +1,5 @@
-// src/components/activity/MyActivityListItem.jsx
-
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // Component nhỏ để hiển thị trạng thái
 const StatusBadge = ({ status }) => {
@@ -25,11 +24,16 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-function MyActivityListItem({ activity, onDetailsClick, onCancelClick }) {
+function MyActivityListItem({ activity, onCancelClick }) {
   const isUpcoming = activity.status === 'approved' || activity.status === 'pending';
   const isHistory = activity.status.startsWith('completed');
 
   const canCancel = activity.status === 'pending';
+  const navigate = useNavigate();
+
+  const handleDetailsClick = () => {
+    navigate(`/activities/${activity.id}`);
+  };
 
   return (
     <div className="py-4 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -58,7 +62,7 @@ function MyActivityListItem({ activity, onDetailsClick, onCancelClick }) {
         {isUpcoming && (
           <>
             <button 
-              onClick={() => onDetailsClick(activity.id)}
+              onClick={handleDetailsClick}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-1.5 px-4 rounded-full shadow-md transition-colors duration-200"
             >
               Chi tiết
@@ -80,7 +84,7 @@ function MyActivityListItem({ activity, onDetailsClick, onCancelClick }) {
         )}
         {isHistory && (
            <button 
-            onClick={() => onDetailsClick(activity.id)}
+            onClick={handleDetailsClick}
             className="bg-gray-500 hover:bg-gray-600 text-white font-bold text-sm py-1.5 px-4 rounded-full shadow-md transition-colors duration-200"
           >
             Xem lại
