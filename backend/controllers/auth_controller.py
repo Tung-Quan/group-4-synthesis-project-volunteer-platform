@@ -10,17 +10,16 @@ import psycopg2
 def register(request: RegisterRequest) -> dict:
     # simple validation/normalization
     email = request.email.lower().strip()
-    valid_types = {'STUDENT', 'ORGANIZER','BOTH'}
+    valid_roles = {'STUDENT', 'ORGANIZER'}
     # debug
     logger.debug(f"Registering user with email: {email}")
 
     # Check for non-empty fields
-    if not email or not request.password or not request.display_name or not request.type:
-        return {"error": "All fields are required", "status_code": 400}
-    # Check if role is valid
-    # Khang: need to fix to student only after testing
-    if request.type not in valid_types:
-        return {"error": "Invalid user type", "status_code": 400}
+    if not email or not request.password:
+        return {"error": "Email and password are required", "status_code": 400}
+    # If role present, validate
+    if request.role and request.role not in valid_roles:
+        return {"error": "Invalid role", "status_code": 400}
     # Check if user already exists
     existing_user = db.fetch_one_sync("SELECT 1 FROM users WHERE email = %s", (email,))
     if existing_user:
@@ -29,17 +28,31 @@ def register(request: RegisterRequest) -> dict:
 
     pwd_hash = hash_password(request.password)
     query = """
-    INSERT INTO users (email, password_hash, display_name, type)
+    INSERT INTO users (email, password_hash, full_name, phone)
     VALUES (%s, %s, %s, %s)
-    RETURNING id, email, display_name, type, is_active, created_at
+    RETURNING id, email, full_name, phone, is_active, created_at, updated_at
     """
-    params = (email, pwd_hash, request.display_name, request.type)
+    params = (email, pwd_hash, request.full_name, request.phone)
 
     try:
         new_user_row = db.execute_query_sync(query, params)
         # return created user
         if new_user_row:
-            return new_user_row[0]
+            user = new_user_row[0]
+            # If a role is provided, create role-specific entry
+            try:
+                user_id = user.get('id')
+                if request.role == 'STUDENT':
+                    if not request.student_no:
+                        return {"error": "student_no required for STUDENT role", "status_code": 400}
+                    db.execute_query_sync("INSERT INTO students (user_id, student_no) VALUES (%s, %s)", (user_id, request.student_no))
+                elif request.role == 'ORGANIZER':
+                    if not request.organizer_no:
+                        return {"error": "organizer_no required for ORGANIZER role", "status_code": 400}
+                    db.execute_query_sync("INSERT INTO organizers (user_id, organizer_no, org_name) VALUES (%s, %s, %s)", (user_id, request.organizer_no, request.org_name))
+            except Exception:
+                logger.exception("Failed to create role-specific record")
+            return user
         else:
             return {"error": "Failed to create user", "status_code": 500}
     # Handle unique constraint violation (email already exists)
