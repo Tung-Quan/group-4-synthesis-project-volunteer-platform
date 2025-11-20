@@ -1,6 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-function ActivityListItem({ activity, onDetailsClick }) {
+function ActivityListItem({ activity }) {
+  const navigate = useNavigate();
+  const handleDetailsClick = () => {
+    navigate(`/activities/${activity.id}`);
+  }
   return (
     <div className="py-4 border-b border-gray-200 flex items-center justify-between">
       <div>
@@ -12,7 +17,7 @@ function ActivityListItem({ activity, onDetailsClick }) {
       </div>
 
       <button 
-        onClick={() => onDetailsClick(activity.id)}
+        onClick={handleDetailsClick}
         className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-1.5 px-4 rounded-full shadow-md transition-colors duration-200"
       >
         Chi tiết

@@ -1,6 +1,6 @@
 import React from 'react';
 
-function RecentUpdates({ updates }) {
+function RecentUpdates({ updates = []}) {
   return (
     <div className="w-full mt-8">
       <h2 className="text-xl font-bold text-gray-800 mb-1">Cập nhật gần đây</h2>
