@@ -116,3 +116,12 @@ def attach_csrf_token(session: dict) -> str:
     if "csrf_token" not in session:
         session["csrf_token"]= make_csrf()
     return session["csrf_token"]
+
+def regenerate_csrf_token(session: dict) -> str:
+    """
+    BẮT BUỘC tạo mới CSRF token và ghi đè lên cái cũ.
+    Dùng riêng cho hành động Login để bảo mật (Session Rotation).
+    """
+    new_token = make_csrf()
+    session["csrf_token"] = new_token
+    return new_token

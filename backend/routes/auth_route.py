@@ -41,7 +41,7 @@ def login_user(request: LoginRequest, response: Response,request_obj: Request):
             samesite="lax",
             max_age=env_settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60
         )
-    csrf_token = auth_controller.attach_csrf_token(request_obj.session)
+    csrf_token = auth_controller.regenerate_csrf_token(request_obj.session)
     return {
         "token_type": "bearer",
         "user": result["user"],

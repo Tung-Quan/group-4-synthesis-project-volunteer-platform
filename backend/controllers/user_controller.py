@@ -32,6 +32,7 @@ def update_user_profile(user_id: str, request: UpdateProfileRequest) -> dict:
     params.append(user_id)
 
     set_clause = ", ".join(update_fields) + ", updated_at = NOW()"
+    
     query = f"""
     UPDATE users
     SET {set_clause}
