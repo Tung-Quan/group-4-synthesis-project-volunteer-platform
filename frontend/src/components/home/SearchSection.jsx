@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-function SearchSection({navigateTo}) {
+function SearchSection() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const handleSearch = (e) => {
     e.preventDefault(); 
     if (searchTerm.trim()) { 
-      navigateTo('search-results', { query: searchTerm });
+      navigate(`/search?query=${encodeURIComponent(searchTerm)}`);    
     }
   };
 
