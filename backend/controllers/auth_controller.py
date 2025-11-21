@@ -7,6 +7,9 @@ from datetime import timedelta
 from ..config.security import make_csrf
 import psycopg2
 
+import jwt
+from jwt import PyJWTError
+
 def register(request: RegisterRequest) -> dict:
     # simple validation/normalization
     email = request.email.lower().strip()
@@ -93,7 +96,7 @@ def logout(request, response, user_id: str) -> dict:
     cookie_domain = getattr(ENV(), 'COOKIE_DOMAIN', None)
     try:
         response.delete_cookie(key="access_token", path='/', domain=cookie_domain)
-        response.delete_cookie(key="refresh_token", path='/', domain=cookie_domain)
+        response.delete_cookie(key="refresh_token", path='/auth/refresh', domain=cookie_domain)
         # response.delete_cookie(key="session", path='/', domain=cookie_domain) #delete session cookie
     except Exception:
         # fallback to simple deletion if domain/path fails
@@ -103,8 +106,8 @@ def logout(request, response, user_id: str) -> dict:
         # ") #delete session cookie
     try:
         # if "csrf_token" in request.session:
-        #     request.session.pop("csrf_token", None)
-        None
+        request.session.pop("csrf_token", None)
+        # None
     except Exception:
         pass
 
@@ -125,3 +128,28 @@ def regenerate_csrf_token(session: dict) -> str:
     new_token = make_csrf()
     session["csrf_token"] = new_token
     return new_token
+
+def refresh(refresh_token: str) -> dict:
+    try:
+        jwt_secret, jwt_algo, _, _, _ = ENV().get_jwt_secret()
+
+        payload = jwt.decode(
+            refresh_token,
+            jwt_secret,
+            algorithms=[jwt_algo]
+        )
+
+        if payload.get("type") != "refresh":
+            return {"error": "Invalid token type", "status_code": 401}
+
+        user_id = payload.get("sub")
+
+        # Tạo lại access token
+        new_access_token = create_access_token(
+            data={"sub": user_id, "type": "access"}
+        )
+
+        return {"access_token": new_access_token}
+
+    except PyJWTError:
+        return {"error": "Invalid refresh token", "status_code": 401}
