@@ -1,7 +1,7 @@
 from pydantic import BaseModel
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 from datetime import datetime
-
+from uuid import UUID
 
 class RegisterRequest(BaseModel):
     email: str
@@ -30,14 +30,39 @@ class UpdateProfileRequest(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
 
-class UserProfileResponse(BaseModel):
-    id: str
+# 1. Model cơ bản chung cho mọi User
+class BaseUserProfileResponse(BaseModel):
+    id: UUID
     email: str
     full_name: Optional[str] = None
     phone: Optional[str] = None
+    type: str  # STUDENT, ORGANIZER, BOTH
     is_active: bool
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: Optional[datetime] = None
 
     class Config:
-        from_attribute = True
+        from_attributes = True
+
+# 2. Model thống kê cho Student
+class StudentStats(BaseModel):
+    activities_joined: int = 0        
+    total_social_work_days: float = 0.0 
+    pending_activities: int = 0       
+
+# 3. Model thống kê cho Organizer
+class OrganizerStats(BaseModel):
+    managed_events_count: int = 0     
+
+# 4. Response đầy đủ cho Student
+class StudentProfileResponse(BaseUserProfileResponse):
+    student_info: Optional[dict] = None # Chứa student_no...
+    stats: StudentStats
+
+# 5. Response đầy đủ cho Organizer
+class OrganizerProfileResponse(BaseUserProfileResponse):
+    organizer_info: Optional[dict] = None # Chứa org_name...
+    stats: OrganizerStats
+
+# 6. Union Model: Để FastAPI tự chọn model phù hợp khi trả về
+UserProfileResponse = Union[StudentProfileResponse, OrganizerProfileResponse, BaseUserProfileResponse]
