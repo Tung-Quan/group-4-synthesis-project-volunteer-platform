@@ -9,8 +9,8 @@ class RegisterRequest(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
     # Optional role: if provided, controllers may create role-specific rows
-    role: Optional[Literal['STUDENT', 'ORGANIZER']] = None
-    # Optional identifiers for role tables
+    role: Literal['STUDENT', 'ORGANIZER']
+
     student_no: Optional[str] = None
     organizer_no: Optional[str] = None
     org_name: Optional[str] = None
@@ -40,4 +40,4 @@ class UserProfileResponse(BaseModel):
     updated_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attribute = True
