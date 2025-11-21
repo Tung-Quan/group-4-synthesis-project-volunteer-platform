@@ -1,72 +1,86 @@
 import React, { useState } from 'react';
+import { findUserByCredentials } from '../mockdata/mockUser';
 
-function LoginForm() {
-  const [username, setUsername] = useState('');
+function LoginForm({ onLoginSuccess }) {
+  const [email, setEmail] = useState(''); 
   const [password, setPassword] = useState('');
 
   const handleLogin = (e) => {
-    e.preventDefault(); 
-    console.log('Đăng nhập với:', { username, password });
-    
-    alert(`Đăng nhập thành công với Username: ${username} (Đây là demo)`);
+    e.preventDefault();
+    console.log('Đang thử đăng nhập với:', { email, password });
 
-    window.location.href = "/"; //nav back to homepage, might have to do set up a different page for logged-in users?
+    // Gọi hàm giả lập để tìm user
+    const user = findUserByCredentials(email, password);
+
+    if (user) {
+      alert(`Đăng nhập thành công với vai trò ${user.type}!`);
+      onLoginSuccess(user);
+    } else {
+      alert('Email hoặc mật khẩu không đúng.');
+    }
   };
 
   const handleClear = () => {
-    setUsername('');
+    setEmail('');
     setPassword('');
-    console.log('Đã xóa dữ liệu form.');
   };
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow-xl max-w-md mx-auto my-8">
-      <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Đăng nhập</h2>
-      <form onSubmit={handleLogin} className="space-y-6">
-        <div>
-          <label htmlFor="username" className="block text-gray-700 text-sm font-bold mb-2">
-            Tên đăng nhập:
+    <div className="bg-white p-6 border-2 border-gray-400 rounded-lg shadow-lg w-full max-w-md">
+      <h2 className="text-2xl font-bold text-center text-red-600 mb-6">Đăng nhập</h2>
+      
+      <form onSubmit={handleLogin} className="space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="email" className="block text-gray-700 font-semibold">
+            Email
           </label>
           <input
-            type="text"
-            id="username"
-            className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
-            placeholder="Nhập tên đăng nhập của bạn"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            type="email"
+            id="email"
+            className="w-full py-2 px-3 bg-gray-200 border border-gray-400 rounded-md shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
+            placeholder="Nhập email của bạn"
           />
         </div>
-        <div>
-          <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
-            Mật khẩu:
+
+        <div className="space-y-2">
+          <label htmlFor="password" className="block text-gray-700 font-semibold">
+            Mật khẩu
           </label>
           <input
             type="password"
             id="password"
-            className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
-            placeholder="******************"
+            className="w-full py-2 px-3 bg-gray-200 border border-gray-400 rounded-md shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
         </div>
-        <div className="flex items-center justify-between space-x-4">
+        
+        <div className="flex items-center justify-start space-x-4 pt-2">
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline w-1/2 transition-colors duration-200"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md shadow-md transition-colors duration-200"
           >
             Đăng nhập
           </button>
           <button
             type="button"
             onClick={handleClear}
-            className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline w-1/2 transition-colors duration-200"
+            className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-md shadow-md transition-colors duration-200"
           >
             Xóa
           </button>
         </div>
       </form>
+      
+      <div className="mt-6 text-left">
+        <a href="#" className="text-blue-600 hover:underline">
+          Đổi mật khẩu?
+        </a>
+      </div>
     </div>
   );
 }

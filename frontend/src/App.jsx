@@ -1,75 +1,234 @@
 import React, { useState } from 'react';
-import Header from './components/Header';
-import PrimaryNavbar from './components/PrimaryNavBar';
-import InfoCard from './components/InfoCard';
-import ActivitySection from './components/ActivitySection';
-import HeroImageSection from './components/HeroImageSection';
-import CallToActionSection from './components/CallToActionSection';
-import Footer from './components/Footer';
-import LoginPage from './pages/LoginPage'; 
+import HomePageLoggedOut from './pages/HomePageLoggedOut'; 
+import HomePageLoggedIn from './pages/HomePageLoggedIn'; 
+import LoginPage from './pages/LoginPage';
+
+import NewActivitiesPage from './pages/NewActivitiesPage';
+import CurrentActivitiesPage from './pages/CurrentActivitiesPage'; 
+import ActivityDetailPage from './pages/ActivityDetailPage';
+import ApplicationReviewPage from './pages/ApplicationReviewPage';
+import ApplicationDetailPage from './pages/ApplicationDetailPage';
+ 
+import { 
+  allActivitiesDetails, 
+  newActivities, 
+  currentActivities,
+  recentUpdates,
+  managedActivities,
+  myActivities
+} from './mockdata/mockActivities.js';
+
+import SearchResultsPage from './pages/SearchResultsPage.jsx';
+import { applicationDetails, getApplication } from './mockdata/mockApplications.js';
+import ActivityDashboard from './pages/ActivityDashboard.jsx';
+import ActivityDetailDashboard from './pages/ActivityDetailDashboard.jsx';
+
+import ParticipatingPage from './pages/ParticipatingPage.jsx';
+import HistoryPage from './pages/HistoryPage';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('home'); 
+  const [currentPage, setCurrentPage] = useState('home-logged-out'); 
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Trạng thái đăng nhập
+  const [currentActivityId, setCurrentActivityId] = useState(null);
+  const [currentApplicationId, setCurrentApplicationId] = useState(null);
+  const [previousPage, setPreviousPage] = useState(null);
+  const [user, setUser] = useState(null);
+  const [searchQuery, setSearchQuery] = useState(''); // State cho từ khóa tìm kiếm
+  const [redirectAfterLogin, setRedirectAfterLogin] = useState(null); // State để lưu trang cần chuyển đến sau khi login
+  const organizerOnlyPages = ['application-review', 'activity-dashboard', 'activity-detail-dashboard'];
 
-  const navigateTo = (page) => {
+
+  const navigateTo = (page, params = {}) => {
+    setPreviousPage(currentPage);
+    if (page === 'login' && params.redirectAfterLogin) {
+      setRedirectAfterLogin(params.redirectAfterLogin);
+    } 
     setCurrentPage(page);
+    if (page === 'activity-detail' && params.id) {
+      setCurrentActivityId(params.id);
+    }
+    if (page === 'application-detail' && params.id) {
+      setCurrentApplicationId(params.id);
+    }
+    if (page === 'search-results' && params.query) {
+      setSearchQuery(params.query);
+    }
   };
 
-  // Dữ liệu giả cho các hoạt động
-  const currentActivities = [
-    { title: "HỖ TRỢ CÔNG TÁC VĂN PHÒNG ĐOÀN TN - LIÊN CHI HỘI SV KHOA CƠ KHÍ TỪ NGÀY 15/9 ĐẾN 19/9/2025", location: "cơ sở 1, P. Diễn Hồng", date: "15/9-19/9/2025" },
-    { title: "HỖ TRỢ BỘ MÔN KỸ THUẬT DỆT MAY ĐI DỜI MÁY 24.09.2025", location: "cơ sở 1, P. Diễn Hồng", date: "24/09/2025" },
-    { title: "CÁC HOẠT ĐỘNG DI DỜI THIẾT BỊ VÀ DỌN DẸP PHÒNG THI NGHIỆM THUỘC KHOA CƠ KHÍ NGÀY 17.09.2025", location: "cơ sở 1, P. Diễn Hồng", date: "17/09/2025" },
-    { title: "THAM GIA TỔ CHỨC LỄ ĐÓN TÂN SINH K2025 VÀ LỄ TRAO HỌC BỔNG KHOA CƠ KHÍ 05/9/2025", location: "cơ sở 1, P. Diễn Hồng", date: "05/09/2025" },
-    { title: "GIAN HÀNG CHÀO ĐÓN TSV Khóa 2025", location: "Sân B1, CS1", date: "Khóa 2025" },
-    { title: "Hoạt động thử nghiệm 1", location: "Địa điểm 1", date: "Ngày 1" },
-    { title: "Hoạt động thử nghiệm 2", location: "Địa điểm 2", date: "Ngày 2" },
-    { title: "Hoạt động thử nghiệm 3", location: "Địa điểm 3", date: "Ngày 3" },
-  ];
+  const handleLoginSuccess = (loggedInUser) => {
+    setIsLoggedIn(true);
+  setUser(loggedInUser);
+  
+  let destinationPage = redirectAfterLogin || 'home-logged-in';
 
-  const newActivities = [
-    { title: "[ĐD] ĐƠN DẸP NGHĨA TRANG LIỆT SĨ THÀNH PHỐ TUẦN 39/2025", location: "VRF6+7GR, Song Hành, Long Bình, Quận 9, Thành phố Hồ Chí Minh", date: "Tuần 39/2025" },
-    { title: "[ĐD] ĐƠN DẸP LÀNG THIẾU NIÊN THỦ ĐỨC TUẦN 39/2025", location: "18 Đ. Võ Văn Ngân, Bình Thọ, Thủ Đức, Thành phố Hồ Chí Minh", date: "Tuần 39/2025" },
-    { title: "[ĐD] HỖ TRỢ QUÁN CƠM MÁY NGÀN 1 TUẦN 39/2025", location: "239 Lý Thường Kiệt, phường 15, quận 11, TP. HCM", date: "Tuần 39/2025" },
-    { title: "[ĐD] HỖ TRỢ QUÁN CƠM 2000 TUẦN 39/2025", location: "14/1 Ngô Quyền, Quận 10, TP.HCM", date: "Tuần 39/2025" },
-    { title: "[HH] Chức danh sinh viên năm học 2024-2025 - K24", location: "cơ sở 2", date: "2024-2025" },
-    { title: "Hoạt động mới thử nghiệm 1", location: "Địa điểm mới 1", date: "Ngày mới 1" },
-    { title: "Hoạt động mới thử nghiệm 2", location: "Địa điểm mới 2", date: "Ngày mới 2" },
-  ];
+  // === LOGIC PHÂN QUYỀN MỚI ===
+  // Nếu người dùng là VOLUNTEER...
+  if (loggedInUser.type === 'VOLUNTEER') {
+    // ...và họ đang cố gắng truy cập một trang của ORGANIZER...
+    if (organizerOnlyPages.includes(destinationPage)) {
+      // ...thì chuyển hướng họ về trang chủ mặc định.
+      console.warn(`Access denied: Volunteer cannot access '${destinationPage}'. Redirecting to home.`);
+      destinationPage = 'home-logged-in';
+    }
+  }
+  
+  setCurrentPage(destinationPage);
+  setRedirectAfterLogin(null);
+};
 
-  // Component HomePageContent để chứa tất cả nội dung trang chủ
-  const HomePageContent = () => (
-    <div className="min-h-screen bg-rose-50 flex flex-col">
-      <Header onLoginClick={navigateTo} hideLoginButton={currentPage === 'login'} />
-      <PrimaryNavbar currentPage={currentPage} navigateTo={navigateTo} />
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUser(null);
+    setCurrentPage('home-logged-out');
+    setRedirectAfterLogin(null); 
+  };
 
-      <main className="flex-grow max-w-7xl mx-auto p-4 md:flex md:space-x-8 lg:space-x-12 mt-6">
-        {/* Left Column */}
-        <div className="w-full md:w-1/2 lg:w-2/5 space-y-8 mb-8 md:mb-0">
-          <div className="space-y-4">
-            <InfoCard icon="🔍" title="Dễ dàng tìm kiếm" description="Tìm kiếm các hoạt động phù hợp với sở thích của bạn." />
-            <InfoCard icon="✍️" title="Đăng ký tham gia" description="Tham gia nhanh chóng chỉ với vài cú nhấp chuột." />
-            <InfoCard icon="🏅" title="Tích lũy ngày CTXH" description="Theo dõi và tích lũy thời gian hoạt động công tác xã hội." />
-          </div>
-          <HeroImageSection />
-        </div>
-
-        
-        <div className="w-full md:w-1/2 lg:w-3/5 space-y-6">
-          <ActivitySection title="Các hoạt động đang diễn ra" activities={currentActivities} />
-          <ActivitySection title="Các hoạt động mới" activities={newActivities} />
-        </div>
-      </main>
-
-      <CallToActionSection onLoginClick={navigateTo} />
-      <Footer />
-    </div>
-  );
+  const selectedActivity = allActivitiesDetails[currentActivityId];
+  const selectedApplication = getApplication(currentApplicationId);
+  // TÌM TRẠNG THÁI ĐĂNG KÝ CỦA NGƯỜI DÙNG CHO HOẠT ĐỘNG ĐANG XEM
+  const userApplicationStatus = myActivities.find(
+    activity => activity.id === currentActivityId
+  )?.status || null; // Dùng ?. (optional chaining) để an toàn
 
   return (
     <>
-      {currentPage === 'home' && <HomePageContent />}
-      {currentPage === 'login' && <LoginPage navigateTo={navigateTo} />}
+      {/* HomePageLoggedOut*/}
+      {currentPage === 'home-logged-out' && (
+        <HomePageLoggedOut
+          navigateTo={navigateTo}
+          isLoggedIn={isLoggedIn}
+        />
+      )}
+
+      {/*LoginPage*/}
+      {currentPage === 'login' && (
+        <LoginPage
+          navigateTo={navigateTo}
+          onLoginSuccess={handleLoginSuccess}
+          isLoggedIn={isLoggedIn}
+        />
+      )}
+
+      {/* HomePageLoggedIn*/}
+      {isLoggedIn && (currentPage === 'home-logged-in') && (
+        <HomePageLoggedIn
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user} 
+          recentUpdates={recentUpdates}
+        />
+      )}
+
+      {/* Trang kết quả tìm kiếm */}
+      {isLoggedIn && currentPage === 'search-results' && (
+        <SearchResultsPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+          searchQuery={searchQuery}
+        />
+      )}
+
+      {/* Trang Hoạt động mới */}
+      {isLoggedIn && currentPage === 'new-activities' && (
+        <NewActivitiesPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+          activities={newActivities}
+        />
+      )}
+
+      {/* Trang Hoạt động đang diễn ra */}
+      {isLoggedIn && currentPage === 'current-activities' && (
+        <CurrentActivitiesPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+          activities={currentActivities}
+        />
+      )}
+
+      {/* Trang Chi tiết Hoạt động */}
+      {isLoggedIn && currentPage === 'activity-detail' && selectedActivity && (
+        <ActivityDetailPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+          activity={selectedActivity}
+          previousPage={previousPage}
+          applicationStatus={userApplicationStatus}
+        />
+      )}
+
+      {isLoggedIn && currentPage === 'participating-activities' && (
+        <ParticipatingPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+        />
+      )}
+
+      {isLoggedIn && currentPage === 'history-activities' && (
+        <HistoryPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+        />
+      )}
+      
+      {/* Trang duyệt đơn ứng tuyển của organizer */}
+      {isLoggedIn && currentPage === 'application-review' && (
+        <ApplicationReviewPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+          applications={applicationDetails}
+        />
+      )}
+
+      {/* Trang Chi tiết đơn ứng tuyển */}
+      {isLoggedIn && currentPage === 'application-detail' && (
+        <ApplicationDetailPage
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+          application={selectedApplication}
+          previousPage={previousPage}
+        />
+      )}
+
+      
+      {/* Trang quản lý các hoạt động của organizer */}
+      {isLoggedIn && currentPage === 'activity-dashboard' && (
+        <ActivityDashboard
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+          activities={managedActivities}
+        />
+      )}
+      {isLoggedIn && currentPage === 'activity-detail-dashboard' && selectedActivity && (
+        <ActivityDetailDashboard
+          navigateTo={navigateTo}
+          onLogout={handleLogout}
+          isLoggedIn={isLoggedIn}
+          user={user}
+          activity={selectedActivity}
+          previousPage={previousPage}
+        />
+      )}
+
     </>
   );
 }

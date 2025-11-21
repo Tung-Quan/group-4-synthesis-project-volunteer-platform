@@ -8,6 +8,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'], // Định nghĩa Inter là font sans-serif mặc định
+        serif: [' "EB Garamond" ', 'serif'], // Định nghĩa EB Garamond là font serif
       },
     },
   },
