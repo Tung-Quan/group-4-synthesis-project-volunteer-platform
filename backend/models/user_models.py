@@ -8,23 +8,45 @@ class RegisterRequest(BaseModel):
     password: str
     full_name: Optional[str] = None
     phone: Optional[str] = None
-    # Optional role: if provided, controllers may create role-specific rows
-    role: Literal['STUDENT', 'ORGANIZER']
+
+    type: Literal['STUDENT', 'ORGANIZER']
 
     student_no: Optional[str] = None
     organizer_no: Optional[str] = None
     org_name: Optional[str] = None
 
+class RegisterResponse(BaseModel):
+    id: UUID
+    email: str
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    type: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
 
 class LoginRequest(BaseModel):
     email: str
     password: str
 
-
 class LogoutRequest(BaseModel):
     user_id: str
 
+class LoginResponse(BaseModel):
+    token_type: str = "bearer"
+    user: dict 
+    csrf_token: str
 
+class CsrfResponse(BaseModel):
+    csrf_token: str
+
+class RefreshResponse(BaseModel):
+    message: str = "Access token refreshed successfully"
+
+class MessageResponse(BaseModel):
+    message: str
+
+# ---------------------------------------
 class UpdateProfileRequest(BaseModel):
     # Can add more fields as needed
     full_name: Optional[str] = None
@@ -36,10 +58,8 @@ class BaseUserProfileResponse(BaseModel):
     email: str
     full_name: Optional[str] = None
     phone: Optional[str] = None
-    type: str  # STUDENT, ORGANIZER, BOTH
-    is_active: bool
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    type: str # STUDENT, ORGANIZER
+    # Đã bỏ: is_active, created_at, updated_at
 
     class Config:
         from_attributes = True

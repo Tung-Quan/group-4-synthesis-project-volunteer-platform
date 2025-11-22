@@ -7,12 +7,16 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto; -- gen_random_uuid()
 -- --------------------------
 -- USERS (auth + common info)
 -- --------------------------
+DO $$ BEGIN
+  CREATE TYPE user_type AS ENUM ('STUDENT','ORGANIZER');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE TABLE IF NOT EXISTS users (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email         TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   full_name     TEXT,
   phone         TEXT,
+  type          user_type NOT NULL, -- type collumn using ENUM user_type
   is_active     BOOLEAN NOT NULL DEFAULT TRUE,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()

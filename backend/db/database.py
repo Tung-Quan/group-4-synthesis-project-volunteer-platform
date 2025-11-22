@@ -41,6 +41,25 @@ class DataBase:
             
             
             # --- C2C SCHEMA START ---
+            
+            # 0. ENUMS (Tạo trước bảng users để dùng cho cột type)
+            # Lưu ý: Nếu enum đã tồn tại với giá trị 'BOTH', bạn cần drop và tạo lại trong DB thực tế
+            # hoặc dùng ALTER TYPE. Ở đây là code khởi tạo cho môi trường mới.
+            self.cursor.execute(
+        """
+        DO $$ BEGIN 
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_type') THEN
+                CREATE TYPE user_type AS ENUM ('STUDENT', 'ORGANIZER');
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'event_status') THEN
+                CREATE TYPE event_status AS ENUM ('draft','published','cancelled','completed');
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'application_status') THEN
+                CREATE TYPE application_status AS ENUM ('applied','approved','rejected','withdrawn','attended','absent');
+            END IF;
+        END $$;
+        """
+            )
             # USERS table
             self.cursor.execute(
         """
@@ -50,10 +69,11 @@ class DataBase:
             password_hash text NOT NULL,
             full_name     text,
             phone         text,
+            type          user_type NOT NULL, -- type collumn using ENUM user_type
             is_active     boolean NOT NULL DEFAULT true,
             created_at    timestamptz NOT NULL DEFAULT now(),
             updated_at    timestamptz NOT NULL DEFAULT now()
-        );
+        );\
         """
             )
             # STUDENTS table
@@ -76,18 +96,7 @@ class DataBase:
         );
         """
             )
-            # ENUMS for events/applications
-            self.cursor.execute(
-        """
-        DO $$ BEGIN
-          CREATE TYPE event_status AS ENUM ('draft','published','cancelled','completed');
-        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-        DO $$ BEGIN
-          CREATE TYPE application_status AS ENUM
-            ('applied','approved','rejected','withdrawn','attended','absent');
-        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-        """
-            )
+            
             # EVENTS table
             self.cursor.execute(
         """
