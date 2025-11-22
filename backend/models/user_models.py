@@ -8,7 +8,7 @@ class RegisterRequest(BaseModel):
     password: str
     full_name: Optional[str] = None
     phone: Optional[str] = None
-    
+
     type: Literal['STUDENT', 'ORGANIZER']
 
     student_no: Optional[str] = None
@@ -32,7 +32,7 @@ class CsrfResponse(BaseModel):
     csrf_token: str
 
 class RefreshResponse(BaseModel):
-    message: str = "Access token refreshed successfully" # English message
+    message: str = "Access token refreshed successfully"
 
 class MessageResponse(BaseModel):
     message: str

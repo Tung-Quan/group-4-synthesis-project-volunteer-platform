@@ -122,7 +122,6 @@ def refresh_token(request: Request, response: Response):
 
     new_access_token = result["access_token"]
 
-    # chỉ router mới được set cookie!
     response.set_cookie(
         key="access_token",
         value=new_access_token,
@@ -132,4 +131,4 @@ def refresh_token(request: Request, response: Response):
         max_age=env_settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
 
-    return {"Success refresh access token!"}
+    return {"message": "Access token refreshed successfully"}
