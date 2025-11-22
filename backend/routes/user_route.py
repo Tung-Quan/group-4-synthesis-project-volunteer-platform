@@ -7,16 +7,13 @@ router = APIRouter()
 
 @router.get(
     "/profile/me",
-    summary="Xem hồ sơ cá nhân",
+    summary="Get Current User Profile",
     response_model=UserProfileResponse,
     description="""
-    Trả về thông tin chi tiết của người dùng đang đăng nhập.
-    - Nếu là **STUDENT**: Kèm theo thống kê hoạt động, ngày công.
-    - Nếu là **ORGANIZER**: Kèm theo số lượng sự kiện quản lý.
+    Retrieve detailed profile of the currently logged-in user.\n
+    - **STUDENT**: Includes activity stats and social work days.
+    - **ORGANIZER**: Includes managed events count.
     """
-    # responses={
-    #     200: {"description": "Thành công"}
-    # }
 )
 def get_my_profile(current_user: dict = Depends(get_current_user)):
     result = get_user_profile(str(current_user["id"]))
@@ -26,15 +23,16 @@ def get_my_profile(current_user: dict = Depends(get_current_user)):
 
 @router.put(
     "/profile/me",
-    summary="Cập nhật hồ sơ",
+    summary="Update User Profile",
     response_model=UserProfileResponse,
     description="""
-    Cập nhật các thông tin cơ bản (Tên, SĐT...).
-    **Yêu cầu bảo mật:** Header `X-CSRF-Token` bắt buộc phải có.
+    Update basic profile information (Full Name, Phone).
+    **Security Requirement:** `X-CSRF-Token` header is required.
     """,
     responses={
-        400: {"description": "Không có trường nào được gửi để cập nhật"},
-        403: {"description": "Thiếu hoặc sai CSRF Token"}
+        400: {"description": "No fields provided for update"},
+        403: {"description": "Missing or invalid CSRF Token"},
+        500: {"description": "Failed to update profile"}
     }
 )
 def update_my_profile(

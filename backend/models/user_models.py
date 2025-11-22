@@ -15,6 +15,15 @@ class RegisterRequest(BaseModel):
     organizer_no: Optional[str] = None
     org_name: Optional[str] = None
 
+class RegisterResponse(BaseModel):
+    id: UUID
+    email: str
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    type: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
 
 class LoginRequest(BaseModel):
     email: str
