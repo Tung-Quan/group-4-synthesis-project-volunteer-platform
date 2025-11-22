@@ -8,7 +8,7 @@ def get_user_profile(user_id: str) -> dict:
     """
     # 1. Lấy thông tin cơ bản
     query_user = """
-    SELECT id, email, full_name, phone, is_active, created_at, updated_at
+    SELECT id, email, full_name, phone, type, is_active, created_at, updated_at
     FROM users
     WHERE id = %s
     """
@@ -16,32 +16,12 @@ def get_user_profile(user_id: str) -> dict:
     
     if not user_row:
         return {"error": "User not found", "status_code": 404}
-    # Determine roles by existence in students/organizers tables
-    roles = []
-    is_student = db.fetch_one_sync("SELECT 1 FROM students WHERE user_id = %s", (user_id,))
-    is_organizer = db.fetch_one_sync("SELECT 1 FROM organizers WHERE user_id = %s", (user_id,))
-    if is_student:
-        roles.append('STUDENT')
-    if is_organizer:
-        roles.append('ORGANIZER')
-    user_row['roles'] = roles
-    # Backwards-compatible `type` field expected by older models/routes
-    if len(roles) == 2:
-        user_type = 'BOTH'
-    elif len(roles) == 1:
-        user_type = roles[0]
-    else:
-        user_type = 'NONE'
-    user_row['type'] = user_type
+    user_type = user_row['type']
+    
+    # 2. Phân nhánh logic (Chỉ còn STUDENT hoặc ORGANIZER)
+    if user_type == 'STUDENT':
+        query_joined = "SELECT COUNT(*) as count FROM applications WHERE student_user_id = %s AND status = 'attended'"
 
-    # 2. Nếu là STUDENT -> Lấy thêm stats của Student
-    if 'STUDENT' in roles:
-        # a. Đếm số đơn đã tham gia (attended)
-        query_joined = """
-            SELECT COUNT(*) as count 
-            FROM applications 
-            WHERE student_user_id = %s AND status = 'attended'
-        """
         # fetch_one_sync trả về dict, lấy key 'count'
         joined_res = db.fetch_one_sync(query_joined, (user_id,))
         joined_count = joined_res['count'] if joined_res else 0
@@ -73,7 +53,7 @@ def get_user_profile(user_id: str) -> dict:
         }
 
     # 3. Nếu là ORGANIZER -> Lấy thêm stats của Organizer
-    elif 'ORGANIZER' in roles:
+    elif user_type == 'ORGANIZER':
         # a. Lấy thông tin tổ chức
         query_org_info = "SELECT organizer_no, org_name FROM organizers WHERE user_id = %s"
         org_info = db.fetch_one_sync(query_org_info, (user_id,))
@@ -126,7 +106,7 @@ def update_user_profile(user_id: str, request: UpdateProfileRequest) -> dict:
     UPDATE users
     SET {set_clause}
     WHERE id = %s
-    RETURNING id, email, full_name, phone, is_active, created_at, updated_at
+    RETURNING id, email, full_name, phone, type, is_active, created_at, updated_at
     """
     
     updated_user_row = db.execute_query_sync(query, tuple(params))
