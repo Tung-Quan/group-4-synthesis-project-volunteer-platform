@@ -22,17 +22,30 @@ async def get_current_user(req: Request) -> dict:
     user = db.fetch_one_sync("SELECT * FROM users WHERE id = %s AND is_active = TRUE", (user_id,))
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
-    
+    # Attach roles derived from students/organizers tables
+    roles = []
+    if db.fetch_one_sync("SELECT 1 FROM students WHERE user_id = %s", (user_id,)):
+        roles.append('STUDENT')
+    if db.fetch_one_sync("SELECT 1 FROM organizers WHERE user_id = %s", (user_id,)):
+        roles.append('ORGANIZER')
+    user['roles'] = roles
+    # provide legacy `type` for compatibility
+    if len(roles) == 2:
+        user['type'] = 'BOTH'
+    elif len(roles) == 1:
+        user['type'] = roles[0]
+    else:
+        user['type'] = 'NONE'
     return user
 
 def require_roles(*roles: str):
     async def role_checker(current_user: dict = Depends(get_current_user)):
-        user_type = current_user.get('type')
-        # check if user_type is in roles
-        if user_type not in roles:
+        user_roles = current_user.get('roles', [])
+        # check if any of the user's roles match required roles
+        if not any(r in user_roles for r in roles):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, 
-                detail=f"User with roles '{user_type}' not authorized for roles: {', '.join(roles)}'"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"User with roles '{user_roles}' not authorized for roles: {', '.join(roles)}"
             )
         return current_user
     return role_checker

@@ -7,20 +7,22 @@ from datetime import timedelta
 from ..config.security import make_csrf
 import psycopg2
 
+import jwt
+from jwt import PyJWTError
+
 def register(request: RegisterRequest) -> dict:
     # simple validation/normalization
     email = request.email.lower().strip()
-    valid_types = {'STUDENT', 'ORGANIZER','BOTH'}
+    valid_roles = {'STUDENT', 'ORGANIZER'}
     # debug
     logger.debug(f"Registering user with email: {email}")
 
     # Check for non-empty fields
-    if not email or not request.password or not request.display_name or not request.type:
-        return {"error": "All fields are required", "status_code": 400}
-    # Check if role is valid
-    # Khang: need to fix to student only after testing
-    if request.type not in valid_types:
-        return {"error": "Invalid user type", "status_code": 400}
+    if not email or not request.password:
+        return {"error": "Email and password are required", "status_code": 400}
+    # If role present, validate
+    if request.role and request.role not in valid_roles:
+        return {"error": "Invalid role", "status_code": 400}
     # Check if user already exists
     existing_user = db.fetch_one_sync("SELECT 1 FROM users WHERE email = %s", (email,))
     if existing_user:
@@ -29,17 +31,31 @@ def register(request: RegisterRequest) -> dict:
 
     pwd_hash = hash_password(request.password)
     query = """
-    INSERT INTO users (email, password_hash, display_name, type)
+    INSERT INTO users (email, password_hash, full_name, phone)
     VALUES (%s, %s, %s, %s)
-    RETURNING id, email, display_name, type, is_active, created_at
+    RETURNING id, email, full_name, phone, is_active, created_at, updated_at
     """
-    params = (email, pwd_hash, request.display_name, request.type)
+    params = (email, pwd_hash, request.full_name, request.phone)
 
     try:
         new_user_row = db.execute_query_sync(query, params)
         # return created user
         if new_user_row:
-            return new_user_row[0]
+            user = new_user_row[0]
+            # If a role is provided, create role-specific entry
+            try:
+                user_id = user.get('id')
+                if request.role == 'STUDENT':
+                    if not request.student_no:
+                        return {"error": "student_no required for STUDENT role", "status_code": 400}
+                    db.execute_query_sync("INSERT INTO students (user_id, student_no) VALUES (%s, %s)", (user_id, request.student_no))
+                elif request.role == 'ORGANIZER':
+                    if not request.organizer_no:
+                        return {"error": "organizer_no required for ORGANIZER role", "status_code": 400}
+                    db.execute_query_sync("INSERT INTO organizers (user_id, organizer_no, org_name) VALUES (%s, %s, %s)", (user_id, request.organizer_no, request.org_name))
+            except Exception:
+                logger.exception("Failed to create role-specific record")
+            return user
         else:
             return {"error": "Failed to create user", "status_code": 500}
     # Handle unique constraint violation (email already exists)
@@ -80,7 +96,7 @@ def logout(request, response, user_id: str) -> dict:
     cookie_domain = getattr(ENV(), 'COOKIE_DOMAIN', None)
     try:
         response.delete_cookie(key="access_token", path='/', domain=cookie_domain)
-        response.delete_cookie(key="refresh_token", path='/', domain=cookie_domain)
+        response.delete_cookie(key="refresh_token", path='/auth/refresh', domain=cookie_domain)
         # response.delete_cookie(key="session", path='/', domain=cookie_domain) #delete session cookie
     except Exception:
         # fallback to simple deletion if domain/path fails
@@ -90,8 +106,8 @@ def logout(request, response, user_id: str) -> dict:
         # ") #delete session cookie
     try:
         # if "csrf_token" in request.session:
-        #     request.session.pop("csrf_token", None)
-        None
+        request.session.pop("csrf_token", None)
+        # None
     except Exception:
         pass
 
@@ -103,3 +119,37 @@ def attach_csrf_token(session: dict) -> str:
     if "csrf_token" not in session:
         session["csrf_token"]= make_csrf()
     return session["csrf_token"]
+
+def regenerate_csrf_token(session: dict) -> str:
+    """
+    BẮT BUỘC tạo mới CSRF token và ghi đè lên cái cũ.
+    Dùng riêng cho hành động Login để bảo mật (Session Rotation).
+    """
+    new_token = make_csrf()
+    session["csrf_token"] = new_token
+    return new_token
+
+def refresh(refresh_token: str) -> dict:
+    try:
+        jwt_secret, jwt_algo, _, _, _ = ENV().get_jwt_secret()
+
+        payload = jwt.decode(
+            refresh_token,
+            jwt_secret,
+            algorithms=[jwt_algo]
+        )
+
+        if payload.get("type") != "refresh":
+            return {"error": "Invalid token type", "status_code": 401}
+
+        user_id = payload.get("sub")
+
+        # Tạo lại access token
+        new_access_token = create_access_token(
+            data={"sub": user_id, "type": "access"}
+        )
+
+        return {"access_token": new_access_token}
+
+    except PyJWTError:
+        return {"error": "Invalid refresh token", "status_code": 401}
