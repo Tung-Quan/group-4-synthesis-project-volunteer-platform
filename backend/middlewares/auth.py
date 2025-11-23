@@ -12,7 +12,9 @@ from ..config.logger import logger
 import jwt
 
 PROTECTED_PREFIXES = ("/", "/dashboard", "/settings")  
-EXCLUDE_PATHS = {"/auth/login","/auth/register", "/auth/refresh", "/healthz", "/static", "/favicon.ico"
+EXCLUDE_PATHS = {
+                "/auth/login","/auth/register", "/auth/refresh", 
+                 "/healthz", "/static", "/favicon.ico"
                 #  ,"/users/profile/me"
                 # ,"auth/logout"
                  }
@@ -60,7 +62,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         if "csrf_token" not in request.session:
             request.session["csrf_token"] = make_csrf()
 
-        if request.method in ("GET", "POST", "PUT", "DELETE", "PATCH"):
+        if request.method in ("POST", "PUT", "DELETE", "PATCH"):
             try:
                 verify_csrf(request)
             except HTTPException as e:
