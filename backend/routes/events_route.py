@@ -47,6 +47,29 @@ def apply_event(request: event_models.ApplyEvent, current_user: dict = Depends(g
         raise HTTPException(status_code=status_code, detail=result["message"])
     return result
 
+@router.patch("/{event_id}/attendance")
+def attendance(event_id: str, request: event_models.UpdateAttendance, current_user: dict = Depends(get_current_user)):
+    result, code = event_controller.mark_attendance(event_id, request, str(current_user["id"]))
+    if code != 200:
+        raise HTTPException(code, result["message"])
+    return result
+
+
+@router.patch("/{event_id}/review")
+def review_app(event_id: str, request: event_models.ReviewApplication, current_user: dict = Depends(get_current_user)):
+    result, status_code = event_controller.review_application(event_id, request, str(current_user["id"]))
+    if status_code != 200:
+        raise HTTPException(status_code=status_code, detail=result["message"])
+    return result
+
+@router.patch("/{event_id}/cancel", status_code=200)
+def cancel_application_route(event_id: str, request: event_models.CancelApplication, current_user: dict = Depends(get_current_user)):
+    result, code = event_controller.cancel_application(event_id, request, str(current_user["id"]))
+    if code != 200:
+        raise HTTPException(status_code=code, detail=result["message"])
+
+    return result
+
 #  ------------------------------------------ APIP for EVENT_SLOTS ------------------------
 @router.post("/{event_id}/create-slot", response_model=event_models.SlotResponse, status_code=status.HTTP_201_CREATED)
 def create_event_slot(

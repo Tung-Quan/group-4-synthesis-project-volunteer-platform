@@ -191,65 +191,141 @@ def apply_event(request, student_user_id):
 
     return {"message": "Successfully registered!"}, 201
 
-def review_application(request, organizer_id):
+def review_application(event_id, request, organizer_id):
     app_query = """
-                SELECT 
-                a.id AS application_id,
-                a.status,
-                e.created_by AS event_organizer
-                FROM applications a
-                JOIN events e ON e.id = a.event_id
-                WHERE a.id = %s
-                """
-    app = db.fetch_one_sync(app_query, (request.application_id,))
+        SELECT 
+            a.event_id,
+            a.slot_id,
+            a.student_user_id,
+            a.status,
+            e.organizer_user_id
+        FROM applications a
+        JOIN events e ON e.id = a.event_id
+        WHERE a.event_id = %s 
+          AND a.slot_id = %s
+          AND a.student_user_id = %s
+    """
+
+    app = db.fetch_one_sync(app_query, (
+        event_id,
+        request.slot_id,
+        request.student_user_id
+    ))
+
     if not app:
-        return {"message": "Application Not Found"}, 404
-    if app["status"] != "PENDING":
-        return {"message": "Application has already been approved"}, 400
-    if app["event_organizer"] != organizer_id:
+        return {"message": "Application not found"}, 404
+
+    if app["status"] != "applied":
+        return {
+            "message": f"Application already '{app['status']}'"
+        }, 400
+
+    if app["organizer_user_id"] != organizer_id:
         return {"message": "Unauthorized"}, 401
-    
-    new_status = "APPROVED" if request.approve else "REJECTED"
+
+    new_status = "approved" if request.approve else "rejected"
 
     update_query = """
-                UPDATE applications
-                SET 
-                    status = %s,
-                    reason = %s,
-                    decided_by = %s,
-                    decided_at = now()
-                WHERE id = %s
-                """
-    update_params = [new_status, request.reason, organizer_id, request.application_id]
-    result = db.execute_query_sync(update_query, tuple(update_params))
+        UPDATE applications
+        SET 
+            status = %s,
+            reason = %s,
+            decided_by = %s,
+            decided_at = now(),
+            updated_at = now()
+        WHERE event_id = %s
+          AND slot_id = %s
+          AND student_user_id = %s
+        RETURNING event_id, slot_id, student_user_id;
+    """
+
+    result = db.execute_query_sync(update_query, (
+        new_status,
+        request.reason,
+        organizer_id,
+        event_id,
+        request.slot_id,
+        request.student_user_id
+    ))
+
     if not result:
         return {"message": "Failed to update application status"}, 500
-    return {"message": f"Application {new_status} successfully"}, 200
+
+    return {
+        "message": f"Application {new_status} successfully"
+    }, 200
+
+
     
-# def check_attendance(request):
-#     check_role = f"SELECT type FROM users WHERE id = '{request.organizer_id}'"
-#     user = db.execute_query(check_role)
-#     if not user or user[0][0] not in ("BOTH","ORGANIZER"):
-#         return {"message": "You are not allowed to do this operation."}, 403
-#     query = f"""
-#         UPDATE applications
-#         SET attendance = {str(request.attended).lower()}
-#         WHERE applicant_id = '{request.applicant_id}'
-#         RETURNING id;
-#     """
+def mark_attendance(event_id, request, organizer_id: str):
+    event_query = """
+        SELECT organizer_user_id
+        FROM events
+        WHERE id = %s
+    """
+    event = db.fetch_one_sync(event_query, (event_id,))
 
-#     result = db.execute_query(query)
-#     if result:
-#         return {"message": "Attendance updated!"}, 200
-#     return {"message": "Failed to update attendance."}, 500
+    if not event:
+        return {"message": "Event not found"}, 404
 
-def cancel_application(request, student_user_id: str):
+    if event["organizer_user_id"] != organizer_id:
+        return {"message": "Unauthorized"}, 403
+
+    app_query = """
+        SELECT status
+        FROM applications
+        WHERE event_id = %s AND slot_id = %s AND student_user_id = %s
+    """
+    app = db.fetch_one_sync(app_query, (
+        event_id,
+        request.slot_id,
+        request.student_user_id
+    ))
+
+    if not app:
+        return {"message": "Application not found"}, 404
+
+    if app["status"] != "approved":
+        return {
+            "message": f"Cannot mark attendance for an application that is '{app['status']}'"
+        }, 400
+
+    new_status = "attended" if request.attended else "absent"
+
+    update_query = """
+        UPDATE applications
+        SET 
+            status = %s,
+            decided_by = %s,
+            decided_at = now(),
+            updated_at = now()
+        WHERE event_id = %s AND slot_id = %s AND student_user_id = %s
+        RETURNING event_id;
+    """
+
+    params = (
+        new_status,
+        organizer_id,
+        event_id,
+        request.slot_id,
+        request.student_user_id,
+    )
+
+    result = db.execute_query_sync(update_query, params)
+
+    if not result:
+        return {"message": "Failed to update attendance"}, 500
+
+    return {"message": f"Marked as {new_status}"}, 200
+
+
+def cancel_application(event_id, request, student_user_id: str):
     query = """
         SELECT status
         FROM applications
-        WHERE event_id = %s AND student_user_id = %s
+        WHERE event_id = %s AND student_user_id = %s AND slot_id = %s;
     """
-    app = db.fetch_one_sync(query, (request.event_id, student_user_id))
+    app = db.fetch_one_sync(query, (event_id, student_user_id, request.slot_id))
 
     if not app:
         return {"message": "Application not found"}, 404
@@ -264,11 +340,11 @@ def cancel_application(request, student_user_id: str):
         SET 
             status = 'withdrawn',
             updated_at = now()
-        WHERE event_id = %s AND student_user_id = %s
+        WHERE event_id = %s AND student_user_id = %s AND slot_id = %s
         RETURNING event_id, student_user_id;
     """
 
-    result = db.execute_query_sync(update_query, (request.event_id, student_user_id))
+    result = db.execute_query_sync(update_query, (event_id, student_user_id, request.slot_id))
 
     if not result:
         return {"message": "Failed to cancel application"}, 500

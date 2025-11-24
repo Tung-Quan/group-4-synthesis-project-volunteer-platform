@@ -77,13 +77,6 @@ class SlotUpdate(BaseModel):
                 raise ValueError('Giờ kết thúc phải sau giờ bắt đầu')
         return v
 
-class UpdateEvent(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    location: Optional[str] = None
-    status: Optional[str] = None
-
-
 class EventRequest(BaseModel):
     title: str
     description: str
@@ -102,19 +95,20 @@ class ApplyEvent(BaseModel):
     slot_id: str
     note: str
 
-class CheckingAttendance(BaseModel):
-    organizer_id: str
-    applicant_id: str
-    attended: bool = True
+class UpdateAttendance(BaseModel):
+    slot_id: str
+    student_user_id: str
+    attended: bool
 
-class ReviewApplication(BaseModel): 
-    application_id: str
-    approve: bool 
-    reason: str | None = None
+class ReviewApplication(BaseModel):
+    slot_id: str
+    student_user_id: str
+    approve: bool
+    reason: Optional[str] = None
 
 class CancelApplication(BaseModel): # For students cancel their applications
-    event_id: str
     slot_id: str
+ 
 
 class MessageResponse(BaseModel):
     message: str
