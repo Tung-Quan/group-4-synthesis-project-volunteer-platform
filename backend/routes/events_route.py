@@ -40,26 +40,25 @@ def apply_event(request: event_models.ApplyEvent, current_user: dict = Depends(g
         raise HTTPException(status_code=status_code, detail=result["message"])
     return result
 
-# @router.post("/attendance")
-# def check_attendance_route(request: CheckingAttendance):
-#     result, status_code = check_attendance(request)
-#     if status_code != 200:
-#         raise HTTPException(status_code=status_code, detail=result["message"])
-#     return result
+@router.patch("/{event_id}/attendance")
+def attendance(event_id: str, request: event_models.UpdateAttendance, current_user: dict = Depends(get_current_user)):
+    result, code = event_controller.mark_attendance(event_id, request, str(current_user["id"]))
+    if code != 200:
+        raise HTTPException(code, result["message"])
+    return result
 
-# @router.post("/review")
-# def review_app(request: ReviewApplication, current_user: dict = Depends(get_current_user)):
-#     result, status_code = review_application(request, str(current_user["id"]))
-#     if status_code != 200:
-#         raise HTTPException(status_code=status_code, detail=result["message"])
-#     return result
 
-# @router.post("/cancel")
-# def cancel_application_route(
-#     request: CancelApplication,
-#     current_user: dict = Depends(get_current_user)
-# ):
-#     result, code = cancel_application(request, str(current_user["id"]))
-#     if code != 200:
-#         raise HTTPException(code, result["message"])
-#     return result
+@router.patch("/{event_id}/review")
+def review_app(event_id: str, request: event_models.ReviewApplication, current_user: dict = Depends(get_current_user)):
+    result, status_code = event_controller.review_application(event_id, request, str(current_user["id"]))
+    if status_code != 200:
+        raise HTTPException(status_code=status_code, detail=result["message"])
+    return result
+
+@router.patch("/{event_id}/cancel", status_code=200)
+def cancel_application_route(event_id: str, request: event_models.CancelApplication, current_user: dict = Depends(get_current_user)):
+    result, code = event_controller.cancel_application(event_id, request, str(current_user["id"]))
+    if code != 200:
+        raise HTTPException(status_code=code, detail=result["message"])
+
+    return result
