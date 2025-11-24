@@ -31,12 +31,16 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto; -- gen_random_uuid()
 -- --------------------------
 -- USERS (auth + common info)
 -- --------------------------
+DO $$ BEGIN
+  CREATE TYPE user_type AS ENUM ('STUDENT','ORGANIZER');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE TABLE IF NOT EXISTS users (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email         TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   full_name     TEXT,
   phone         TEXT,
+  type          user_type NOT NULL, -- type collumn using ENUM user_type
   is_active     BOOLEAN NOT NULL DEFAULT TRUE,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -105,8 +109,11 @@ CREATE INDEX IF NOT EXISTS idx_events_org ON events(organizer_user_id);
 CREATE TABLE IF NOT EXISTS event_slots (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id   UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-  starts_at  TIMESTAMPTZ NOT NULL,
-  ends_at    TIMESTAMPTZ NOT NULL,
+  -- starts_at  TIMESTAMPTZ NOT NULL,
+  -- ends_at    TIMESTAMPTZ NOT NULL,
+  work_date       DATE NOT NULL,
+  starts_at  TIME NOT NULL,
+  ends_at    TIME NOT NULL,
   capacity   INT CHECK (capacity IS NULL OR capacity > 0),
   day_reward NUMERIC(4,2) NOT NULL DEFAULT 1 CHECK (day_reward >= 0),
   UNIQUE (event_id, starts_at, ends_at),

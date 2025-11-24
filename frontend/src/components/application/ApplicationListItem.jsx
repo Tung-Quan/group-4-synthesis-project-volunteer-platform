@@ -1,9 +1,14 @@
 import React from 'react';
 import { getUserDisplayName } from '../../mockdata/mockUser';
 import { getTitle } from '../../mockdata/mockActivities';
+import { useNavigate } from 'react-router-dom';
 
-function ApplicationListItem({ application, onDetailsClick }) {
-
+function ApplicationListItem({ application }) {
+  const navigate = useNavigate();
+  const handleDetailsClick = () => {
+    // 4. Điều hướng đến URL chi tiết đơn
+    navigate(`/organizer/applications/${application.id}`);
+  };
   return (
     <div className="py-4 border-b border-gray-200 flex items-center justify-between">
       <div>
@@ -15,7 +20,7 @@ function ApplicationListItem({ application, onDetailsClick }) {
       </div>
 
       <button 
-        onClick={() => onDetailsClick(application.id)}
+        onClick={handleDetailsClick}
         className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-1.5 px-4 rounded-full shadow-md transition-colors duration-200"
       >
         Chi tiết

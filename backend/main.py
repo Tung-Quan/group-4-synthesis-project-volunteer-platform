@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 # from models import User, Event, Application
 from fastapi import Request, Response
-# from security_cookies import create_access_token, create_refresh_token, get_current_user, require_roles
+# from security_cookies import create_access_token, create_refresh_token, get_current_user, require_types
 
 
 from fastapi import Depends, HTTPException, status
