@@ -90,7 +90,37 @@ export const allActivitiesDetails = {
       creationDate: '15/10/2025',
       fileName: 'Thông tin hiến máu.pdf',
       fileUrl: '#',
-    }
+    },
+    shifts: [
+      {
+        id: 'SHIFT_001_A',
+        time: '07:30 - 10:00',
+        location: 'Khu vực bàn đăng ký',
+        capacity: 10,
+        registered: 8,
+      },
+      {
+        id: 'SHIFT_001_B',
+        time: '10:00 - 12:30',
+        location: 'Khu vực bàn đăng ký',
+        capacity: 10,
+        registered: 5,
+      },
+      {
+        id: 'SHIFT_002',
+        time: '07:30 - 12:30',
+        location: 'Khu vực hỗ trợ y tế',
+        capacity: 5,
+        registered: 5, // Ca này đã đầy
+      },
+      {
+        id: 'SHIFT_003',
+        time: '13:30 - 16:00',
+        location: 'Khu vực quà tặng & cấp giấy chứng nhận',
+        capacity: 8,
+        registered: 2,
+      },
+    ]
   },
   'MYBK006': {
     id: 'MYBK006',
