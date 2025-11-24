@@ -85,8 +85,11 @@ CREATE INDEX IF NOT EXISTS idx_events_org ON events(organizer_user_id);
 CREATE TABLE IF NOT EXISTS event_slots (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id   UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-  starts_at  TIMESTAMPTZ NOT NULL,
-  ends_at    TIMESTAMPTZ NOT NULL,
+  -- starts_at  TIMESTAMPTZ NOT NULL,
+  -- ends_at    TIMESTAMPTZ NOT NULL,
+  work_date       DATE NOT NULL,
+  starts_at  TIME NOT NULL,
+  ends_at    TIME NOT NULL,
   capacity   INT CHECK (capacity IS NULL OR capacity > 0),
   day_reward NUMERIC(4,2) NOT NULL DEFAULT 1 CHECK (day_reward >= 0),
   UNIQUE (event_id, starts_at, ends_at),
