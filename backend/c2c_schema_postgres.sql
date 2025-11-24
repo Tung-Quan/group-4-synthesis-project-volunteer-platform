@@ -1,4 +1,28 @@
 -- ===========================================================
+-- 1. CLEAN UP (XÓA DỮ LIỆU CŨ ĐỂ LÀM SẠCH)
+-- ===========================================================
+DROP TRIGGER IF EXISTS trg_app_attended_add_days ON applications;
+DROP FUNCTION IF EXISTS fn_app_attended_add_days;
+
+DROP VIEW IF EXISTS v_student_bookmarks;
+DROP VIEW IF EXISTS v_organizer_events;
+
+DROP TABLE IF EXISTS student_service_ledger CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS ratings CASCADE;
+DROP TABLE IF EXISTS student_saved_events CASCADE;
+DROP TABLE IF EXISTS applications CASCADE;
+DROP TABLE IF EXISTS event_slots CASCADE;
+DROP TABLE IF EXISTS events CASCADE;
+DROP TABLE IF EXISTS organizers CASCADE;
+DROP TABLE IF EXISTS students CASCADE;
+DROP TABLE IF EXISTS audit_logs CASCADE;
+DROP TABLE IF EXISTS consents CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
+DROP TYPE IF EXISTS application_status;
+DROP TYPE IF EXISTS event_status;
+-- ===========================================================
 -- C2C Volunteer/Event Platform - Clean Schema (UUID-based)
 -- ===========================================================
 
