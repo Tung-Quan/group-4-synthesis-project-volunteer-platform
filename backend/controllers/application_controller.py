@@ -1,0 +1,217 @@
+from ..models.event_models import *
+from ..config.logger import logger
+from ..db.database import db
+from fastapi import Request
+from ..dependencies import verify_csrf
+import json
+
+def apply_event(request, student_user_id):
+    slot_query = """
+        SELECT capacity
+        FROM event_slots
+        WHERE id = %s AND event_id = %s
+    """
+    slot = db.fetch_one_sync(slot_query, (request.slot_id, request.event_id))
+    if not slot:
+        return {"message": "Slot not found"}, 404
+
+    capacity = slot["capacity"]
+
+    check_query = """
+        SELECT event_id
+        FROM applications
+        WHERE event_id = %s AND student_user_id = %s
+    """
+    existing = db.fetch_one_sync(check_query, (request.event_id, student_user_id))
+    if existing:
+        return {"message": "Already registered for this event"}, 400
+
+    count_query = """
+        SELECT COUNT(*) AS current_count
+        FROM applications
+        WHERE slot_id = %s
+    """
+    count_row = db.fetch_one_sync(count_query, (request.slot_id,))
+    current = count_row["current_count"] if count_row else 0
+
+    if current >= capacity:
+        return {"message": "Slot is full. Registration failed"}, 400
+
+    insert_query = """
+        INSERT INTO applications (event_id, student_user_id, slot_id, note)
+        VALUES (%s, %s, %s, %s)
+        RETURNING event_id, student_user_id;
+    """
+
+    params = (
+        request.event_id,
+        student_user_id,
+        request.slot_id,
+        request.note
+    )
+
+    result = db.execute_query_sync(insert_query, params)
+    if not result:
+        return {"message": "Failed registration. Please try again"}, 500
+
+    return {"message": "Successfully registered!"}, 201
+
+def review_application(event_id, request, organizer_id):
+    app_query = """
+        SELECT 
+            a.event_id,
+            a.slot_id,
+            a.student_user_id,
+            a.status,
+            e.organizer_user_id
+        FROM applications a
+        JOIN events e ON e.id = a.event_id
+        WHERE a.event_id = %s 
+          AND a.slot_id = %s
+          AND a.student_user_id = %s
+    """
+
+    app = db.fetch_one_sync(app_query, (
+        event_id,
+        request.slot_id,
+        request.student_user_id
+    ))
+
+    if not app:
+        return {"message": "Application not found"}, 404
+
+    if app["status"] != "applied":
+        return {
+            "message": f"Application already '{app['status']}'"
+        }, 400
+
+    if app["organizer_user_id"] != organizer_id:
+        return {"message": "Unauthorized"}, 401
+
+    new_status = "approved" if request.approve else "rejected"
+
+    update_query = """
+        UPDATE applications
+        SET 
+            status = %s,
+            reason = %s,
+            decided_by = %s,
+            decided_at = now(),
+            updated_at = now()
+        WHERE event_id = %s
+          AND slot_id = %s
+          AND student_user_id = %s
+        RETURNING event_id, slot_id, student_user_id;
+    """
+
+    result = db.execute_query_sync(update_query, (
+        new_status,
+        request.reason,
+        organizer_id,
+        event_id,
+        request.slot_id,
+        request.student_user_id
+    ))
+
+    if not result:
+        return {"message": "Failed to update application status"}, 500
+
+    return {
+        "message": f"Application {new_status} successfully"
+    }, 200
+
+
+    
+def mark_attendance(event_id, request, organizer_id: str):
+    event_query = """
+        SELECT organizer_user_id
+        FROM events
+        WHERE id = %s
+    """
+    event = db.fetch_one_sync(event_query, (event_id,))
+
+    if not event:
+        return {"message": "Event not found"}, 404
+
+    if event["organizer_user_id"] != organizer_id:
+        return {"message": "Unauthorized"}, 403
+
+    app_query = """
+        SELECT status
+        FROM applications
+        WHERE event_id = %s AND slot_id = %s AND student_user_id = %s
+    """
+    app = db.fetch_one_sync(app_query, (
+        event_id,
+        request.slot_id,
+        request.student_user_id
+    ))
+
+    if not app:
+        return {"message": "Application not found"}, 404
+
+    if app["status"] != "approved":
+        return {
+            "message": f"Cannot mark attendance for an application that is '{app['status']}'"
+        }, 400
+
+    new_status = "attended" if request.attended else "absent"
+
+    update_query = """
+        UPDATE applications
+        SET 
+            status = %s,
+            decided_by = %s,
+            decided_at = now(),
+            updated_at = now()
+        WHERE event_id = %s AND slot_id = %s AND student_user_id = %s
+        RETURNING event_id;
+    """
+
+    params = (
+        new_status,
+        organizer_id,
+        event_id,
+        request.slot_id,
+        request.student_user_id,
+    )
+
+    result = db.execute_query_sync(update_query, params)
+
+    if not result:
+        return {"message": "Failed to update attendance"}, 500
+
+    return {"message": f"Marked as {new_status}"}, 200
+
+
+def cancel_application(event_id, request, student_user_id: str):
+    query = """
+        SELECT status
+        FROM applications
+        WHERE event_id = %s AND student_user_id = %s AND slot_id = %s;
+    """
+    app = db.fetch_one_sync(query, (event_id, student_user_id, request.slot_id))
+
+    if not app:
+        return {"message": "Application not found"}, 404
+
+    if app["status"] != "applied":
+        return {
+            "message": f"Cannot cancel an application that is '{app['status']}'"
+        }, 400
+
+    update_query = """
+        UPDATE applications
+        SET 
+            status = 'withdrawn',
+            updated_at = now()
+        WHERE event_id = %s AND student_user_id = %s AND slot_id = %s
+        RETURNING event_id, student_user_id;
+    """
+
+    result = db.execute_query_sync(update_query, (event_id, student_user_id, request.slot_id))
+
+    if not result:
+        return {"message": "Failed to cancel application"}, 500
+
+    return {"message": "Application withdrawn successfully"}, 200
