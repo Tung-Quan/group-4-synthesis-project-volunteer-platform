@@ -12,6 +12,13 @@ def get_events():
         return None
     return events
 
+def get_own_events(my_id):
+    query = """SELECT * FROM events WHERE organizer_user_id = %s"""
+    events = db.execute_query_sync(query,(my_id,))
+    if not events:
+        return None
+    return events
+
 def get_event_by_id(id: str):
     query = """
             SELECT e.id, e.organizer_user_id, e.title, e.description, e.location, e.status,
@@ -344,3 +351,168 @@ def cancel_application(event_id, request, student_user_id: str):
 
     return {"message": "Application withdrawn successfully"}, 200
 
+#  --------------- EVENT_SLOT ---------------
+# 1. Thêm Slot vào Event
+def add_slot_to_event(event_id: str, request, organizer_id: str):
+    # Bước 1: Kiểm tra xem Event có tồn tại và thuộc về Organizer này không
+    check_query = "SELECT id FROM events WHERE id = %s AND organizer_user_id = %s"
+    event = db.fetch_one_sync(check_query, (event_id, organizer_id))
+    
+    if not event:
+        return {"message": "Event not found or you don't have permission"}, 404
+
+    # Bước 2: Insert Slot
+    insert_query = """
+        INSERT INTO event_slots (event_id, work_date, starts_at, ends_at, capacity, day_reward)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        RETURNING id, event_id, work_date, starts_at, ends_at, capacity, day_reward;
+    """
+    params = (
+        event_id, 
+        request.work_date, 
+        request.starts_at, 
+        request.ends_at, 
+        request.capacity, 
+        request.day_reward
+    )
+    
+    new_slot = db.fetch_one_sync(insert_query, params)
+    
+    if not new_slot:
+        return {"message": "Failed to create slot"}, 500
+        
+    return new_slot, 201
+
+# 2. Xóa Slot
+def delete_slot(slot_id: str, organizer_id: str):
+    # 1. Kiểm tra quyền sở hữu
+    check_query = """
+        SELECT s.id 
+        FROM event_slots s
+        JOIN events e ON e.id = s.event_id
+        WHERE s.id = %s AND e.organizer_user_id = %s
+    """
+    slot = db.fetch_one_sync(check_query, (slot_id, organizer_id))
+    
+    if not slot:
+        return {"message": "Slot not found or unauthorized"}, 404
+
+
+    # Bước 2: Kiểm tra ràng buộc (Optional)
+    # Nếu đã có sinh viên đăng ký vào slot này thì có cho xóa không?
+    # Tốt nhất là check trước.
+    # app_check = "SELECT 1 FROM applications WHERE slot_id = %s LIMIT 1"
+    # has_apps = db.fetch_one_sync(app_check, (slot_id,))
+    # if has_apps:
+    #     return {"message": "Cannot delete slot because students have already applied"}, 400
+        
+    try:
+        # 2. Tự động REJECT các đơn đăng ký liên quan thay vì báo lỗi
+        
+        reject_query = """
+            UPDATE applications
+            SET 
+                status = 'rejected',
+                reason = 'Organizer cancelled this slot',
+                decided_by = %s,
+                decided_at = now(),
+                updated_at = now()
+            WHERE slot_id = %s -- Hủy các đơn về slot này đang treo
+        """
+        # Thực hiện update
+        db.execute_query_sync(reject_query, (organizer_id, slot_id))
+
+        # 3. Tiến hành xóa Slot
+        delete_query = "DELETE FROM event_slots WHERE id = %s RETURNING id"
+        result = db.fetch_one_sync(delete_query, (slot_id,))
+        
+        if result:
+            return {"message": "Slot deleted and related applications were rejected"}, 200
+        return {"message": "Failed to delete slot"}, 500
+
+    except Exception as e:
+        logger.error(f"Error deleting slot: {e}")
+        return {"message": "Internal Server Error"}, 500
+
+# 3. Cập nhật Slot
+def update_slot(slot_id: str, request, organizer_id: str):
+    # Bước 1: Check quyền sở hữu
+    check_query = """
+        SELECT s.id 
+        FROM event_slots s
+        JOIN events e ON e.id = s.event_id
+        WHERE s.id = %s AND e.organizer_user_id = %s
+    """
+    slot = db.fetch_one_sync(check_query, (slot_id, organizer_id))
+    if not slot:
+        return {"message": "Slot not found or unauthorized"}, 404
+
+    # Bước 2: Build câu query động (chỉ update cái nào gửi lên)
+    fields = []
+    params = []
+    
+    if request.work_date:
+        fields.append("work_date = %s")
+        params.append(request.work_date)
+    if request.starts_at:
+        fields.append("starts_at = %s")
+        params.append(request.starts_at)
+    if request.ends_at:
+        fields.append("ends_at = %s")
+        params.append(request.ends_at)
+    if request.capacity is not None:
+        fields.append("capacity = %s")
+        params.append(request.capacity)
+    if request.day_reward is not None:
+        fields.append("day_reward = %s")
+        params.append(request.day_reward)
+
+    if not fields:
+        return {"message": "No fields to update"}, 400
+
+    params.append(slot_id)
+    
+    query = f"""
+        UPDATE event_slots 
+        SET {", ".join(fields)} 
+        WHERE id = %s 
+        RETURNING id, event_id, work_date, starts_at, ends_at, capacity, day_reward
+    """
+    
+    updated_slot = db.fetch_one_sync(query, tuple(params))
+    
+    if updated_slot:
+        return updated_slot, 200
+    return {"message": "Update failed"}, 500
+
+# 4. GET Slot Detail
+def get_slot_detail(slot_id: str):
+    # Query lấy thông tin Slot + Đếm số người
+    query = """
+        SELECT 
+            s.id, 
+            s.event_id, 
+            s.work_date, 
+            s.starts_at, 
+            s.ends_at, 
+            s.capacity, 
+            s.day_reward,
+            -- Đếm số người ĐÃ ĐƯỢC NHẬN (Approved)
+            COUNT(a.student_user_id) FILTER (WHERE a.status IN ('approved')) AS approved_count,
+            -- Đếm số người ĐANG CHỜ DUYỆT (Applied)
+            COUNT(a.student_user_id) FILTER (WHERE a.status = 'applied') AS applied_count
+        FROM event_slots s
+        LEFT JOIN applications a ON s.id = a.slot_id -- Dùng LEFT JOIN để vẫn lấy được Slot dù chưa ai đăng ký
+        WHERE s.id = %s
+        GROUP BY s.id -- Group By(Count)
+    """
+    
+    slot = db.fetch_one_sync(query, (slot_id,))
+    
+    if not slot:
+        return None
+    
+    if slot.get('day_reward'):
+        slot['day_reward'] = float(slot['day_reward'])
+        
+    return slot

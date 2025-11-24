@@ -5,9 +5,16 @@ from ..dependencies import get_current_user
 
 router = APIRouter()
 
-@router.get("/", response_model=list[event_models.EventResponse], status_code=status.HTTP_200_OK)
+@router.get("/get-all-event", response_model=list[event_models.EventResponse], status_code=status.HTTP_200_OK)
 def get_events():
     result = event_controller.get_events()
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return result
+
+@router.get("/get-own-event", response_model=list[event_models.EventResponse], status_code=status.HTTP_200_OK)
+def get_own_events(current_user: dict = Depends(get_current_user)):
+    result = event_controller.get_own_events(str(current_user["id"]))
     if result is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return result
@@ -61,4 +68,73 @@ def cancel_application_route(event_id: str, request: event_models.CancelApplicat
     if code != 200:
         raise HTTPException(status_code=code, detail=result["message"])
 
+    return result
+
+#  ------------------------------------------ APIP for EVENT_SLOTS ------------------------
+@router.post("/{event_id}/create-slot", response_model=event_models.SlotResponse, status_code=status.HTTP_201_CREATED)
+def create_event_slot(
+    event_id: str, 
+    request: event_models.SlotCreate, 
+    current_user: dict = Depends(get_current_user)
+):
+    """Thêm một slot mới vào Event (Chỉ Organizer sở hữu Event mới làm được)"""
+    if current_user["type"] not in ("ORGANIZER"):
+        raise HTTPException(status_code=403, detail="Only organizers can manage slots")
+
+    result, code = event_controller.add_slot_to_event(event_id, request, str(current_user["id"]))
+    
+    if code != 201:
+        raise HTTPException(status_code=code, detail=result["message"])
+    return result
+
+@router.delete("/slots/{slot_id}", response_model=event_models.MessageResponse)
+def delete_event_slot(
+    slot_id: str, 
+    current_user: dict = Depends(get_current_user)
+):
+    """Xóa một slot (Cần check xem có sinh viên đăng ký chưa)"""
+    if current_user["type"] not in ("ORGANIZER"):
+        raise HTTPException(status_code=403, detail="Permission denied")
+
+    result, code = event_controller.delete_slot(slot_id, str(current_user["id"]))
+    
+    if code != 200:
+        raise HTTPException(status_code=code, detail=result["message"])
+    return result
+
+@router.patch("/slots/{slot_id}", response_model=event_models.SlotResponse)
+def update_event_slot(
+    slot_id: str, 
+    request: event_models.SlotUpdate, 
+    current_user: dict = Depends(get_current_user)
+):
+    """Cập nhật thông tin slot (giờ, ngày, capacity...)"""
+    if current_user["type"] not in ("ORGANIZER"):
+        raise HTTPException(status_code=403, detail="Permission denied")
+
+    result, code = event_controller.update_slot(slot_id, request, str(current_user["id"]))
+    
+    if code != 200:
+        raise HTTPException(status_code=code, detail=result["message"])
+    return result
+
+@router.get(
+        "/slots/{slot_id}", 
+        response_model=event_models.SlotResponse,
+        status_code=status.HTTP_200_OK)
+def get_slot_detail_route(
+    slot_id: str,
+    current_user: dict = Depends(get_current_user),
+    ):
+    """
+    Lấy chi tiết một Slot cụ thể.
+    Public API (Ai cũng xem được để biết còn chỗ hay không).
+    """
+    result = event_controller.get_slot_detail(slot_id)
+    
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Slot not found"
+        )
     return result

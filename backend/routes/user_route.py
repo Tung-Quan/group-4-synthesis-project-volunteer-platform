@@ -21,7 +21,7 @@ def get_my_profile(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=result["status_code"], detail=result["error"])
     return result
 
-@router.put(
+@router.patch(
     "/profile/me",
     summary="Update User Profile",
     response_model=UserProfileResponse,

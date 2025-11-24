@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import ActivityDetailHeader from '../components/activity/ActivityDetailHeader';
 import ActivityStats from '../components/activity/ActivityStats';
 import ActivityContent from '../components/activity/ActivityContent';
+import ShiftsModal from '../components/activity/ShiftsModal'; // 2. IMPORT MODAL
 
 import { useParams, useNavigate } from 'react-router-dom';
 import { allActivitiesDetails, myActivities } from '../mockdata/mockActivities';
 
 function ActivityDetailPage({user}) {
-  
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
   const { activityId } = useParams(); //Lấy ID từ URL
   const selectedActivity = allActivitiesDetails[activityId]; 
@@ -20,8 +21,14 @@ function ActivityDetailPage({user}) {
   )?.status || null;
 
   const handleRegisterClick = () => {
-    console.log(`Đăng ký hoạt động ID: ${selectedActivity}`);
-    alert(`Bạn đã đăng ký hoạt động "${selectedActivity.title}" (Đây là demo).`);
+    setIsModalOpen(true);
+  };
+
+  const handleRegisterShift = (shiftId) => {
+    console.log(`Đang đăng ký ca ${shiftId} cho hoạt động ${selectedActivity.id}`);
+    alert(`Đăng ký thành công ca ${shiftId} cho hoạt động "${selectedActivity.title}"! (Đây là demo)`);
+    setIsModalOpen(false);
+    // Trong tương lai, đây là nơi bạn sẽ gọi API POST /events/apply với shift_id
   };
 
   const handleCancelClick = () => {
@@ -68,6 +75,14 @@ function ActivityDetailPage({user}) {
           <hr className="my-4 border-gray-300" />
           <ActivityContent details={selectedActivity.details} />
         </div>
+        
+        <ShiftsModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          shifts={selectedActivity.shifts}
+          onRegisterShift={handleRegisterShift}
+          activityTitle={selectedActivity.title}
+        />
       </>
   );
 }
