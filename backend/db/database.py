@@ -448,14 +448,15 @@ class DataBase:
         CREATE TABLE IF NOT EXISTS event_slots (
             id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             event_id   uuid NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-            starts_at  timestamptz NOT NULL,
-            ends_at    timestamptz NOT NULL,
+            work_date  DATE NOT NULL,
+            starts_at  TIME NOT NULL,
+            ends_at    TIME NOT NULL,
             capacity   int CHECK (capacity IS NULL OR capacity > 0),
             day_reward numeric(4,2) NOT NULL DEFAULT 1 CHECK (day_reward >= 0),
-            UNIQUE (event_id, starts_at, ends_at),
+
+            UNIQUE (event_id, work_date, starts_at, ends_at),
             CHECK (ends_at > starts_at)
         );
-        CREATE INDEX IF NOT EXISTS idx_slots_event_time ON event_slots(event_id, starts_at);
         """
             )
             # APPLICATIONS table
