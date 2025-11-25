@@ -19,10 +19,8 @@ class SlotResponse(BaseModel):
     ends_at: time
     capacity: int
     day_reward: float
-
-    # Hai biến mới
-    approved_count: int = 0  # Số người đã được nhận (Approved)
-    applied_count: int = 0   # Số người đang chờ (Applied)
+    approved_count: int = 0  
+    applied_count: int = 0   
 
 class Slot(BaseModel):
     slot_id: str

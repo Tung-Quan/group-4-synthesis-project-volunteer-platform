@@ -124,6 +124,8 @@ class DataBase:
             ends_at    TIME NOT NULL,
             capacity   int CHECK (capacity IS NULL OR capacity > 0),
             day_reward numeric(4,2) NOT NULL DEFAULT 1 CHECK (day_reward >= 0),
+            approved   int DEFAULT 0,
+            applied    int DEFAULT 0,
 
             UNIQUE (event_id, work_date, starts_at, ends_at),
             CHECK (ends_at > starts_at)
@@ -144,7 +146,7 @@ class DataBase:
             decided_at       timestamptz,
             reason           text,
             updated_at       timestamptz NOT NULL DEFAULT now(),
-            PRIMARY KEY (event_id, student_user_id)
+            PRIMARY KEY (event_id, student_user_id, slot_id)
         );
         CREATE INDEX IF NOT EXISTS idx_applications_student ON applications(student_user_id);
         CREATE INDEX IF NOT EXISTS idx_applications_event   ON applications(event_id);

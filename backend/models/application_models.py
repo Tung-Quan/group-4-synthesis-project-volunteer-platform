@@ -20,4 +20,25 @@ class ReviewApplication(BaseModel):
 
 class CancelApplication(BaseModel): # For students cancel their applications
     slot_id: str
+
+class UserApplication(BaseModel):
+    event_name: str
+    work_date: date
+    starts_at: time
+    ends_at: time
+    location: str
+    status: str
+
+class ApplicationDetail(BaseModel):
+    event_id: str
+    event_name: str
+    org_name: str
+    description: str
+    work_date: date
+    starts_at: time
+    ends_at: time
+    location: str
+    day_reward: float
+    status: str
+
  

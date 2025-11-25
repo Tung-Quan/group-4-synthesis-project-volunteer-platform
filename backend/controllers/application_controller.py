@@ -6,10 +6,19 @@ from ..dependencies import verify_csrf
 import json
 
 def apply_event(request, student_user_id):
+    check_query = """
+        SELECT event_id
+        FROM applications
+        WHERE event_id = %s AND student_user_id = %s AND slot_id = %s;
+    """
+    existing = db.fetch_one_sync(check_query, (request.event_id, student_user_id, request.slot_id))
+    if existing:
+        return {"message": "Already registered for this event"}, 400
+    
     slot_query = """
         SELECT capacity
         FROM event_slots
-        WHERE id = %s AND event_id = %s
+        WHERE id = %s AND event_id = %s;
     """
     slot = db.fetch_one_sync(slot_query, (request.slot_id, request.event_id))
     if not slot:
@@ -17,21 +26,12 @@ def apply_event(request, student_user_id):
 
     capacity = slot["capacity"]
 
-    check_query = """
-        SELECT event_id
-        FROM applications
-        WHERE event_id = %s AND student_user_id = %s
-    """
-    existing = db.fetch_one_sync(check_query, (request.event_id, student_user_id))
-    if existing:
-        return {"message": "Already registered for this event"}, 400
-
     count_query = """
         SELECT COUNT(*) AS current_count
         FROM applications
-        WHERE slot_id = %s
+        WHERE event_id = %s AND slot_id = %s;
     """
-    count_row = db.fetch_one_sync(count_query, (request.slot_id,))
+    count_row = db.fetch_one_sync(count_query, (request.event_id,request.slot_id))
     current = count_row["current_count"] if count_row else 0
 
     if current >= capacity:
@@ -215,3 +215,73 @@ def cancel_application(event_id, request, student_user_id: str):
         return {"message": "Failed to cancel application"}, 500
 
     return {"message": "Application withdrawn successfully"}, 200
+
+def get_history(student_user_id):
+    query = """
+        SELECT
+            e.title AS event_name,
+            s.work_date,
+            s.starts_at,
+            s.ends_at,
+            e.location,
+            a.status
+        FROM applications a
+        JOIN events e ON e.id = a.event_id
+        LEFT JOIN event_slots s ON s.id = a.slot_id
+        WHERE a.student_user_id = %s
+        AND a.status = 'attended'
+        ORDER BY s.work_date DESC;
+        """
+    results = db.execute_query_sync(query, (student_user_id,))
+    if not results:
+        return None
+    return results
+
+def get_participating(student_user_id):
+    query = """
+        SELECT
+            e.title AS event_name,
+            s.work_date,
+            s.starts_at,
+            s.ends_at,
+            e.location,
+            a.status
+        FROM applications a
+        JOIN events e ON e.id = a.event_id
+        LEFT JOIN event_slots s ON s.id = a.slot_id
+        WHERE a.student_user_id = %s
+        AND (a.status = 'approved' OR a.status = 'applied')
+        ORDER BY s.work_date DESC;
+        """
+    results = db.execute_query_sync(query, (student_user_id,))
+    if not results:
+        return None
+    return results
+
+def get_application_details(slot_id, student_user_id):
+    query = """
+        SELECT
+            a.event_id,
+            e.title AS event_name,
+            o.org_name AS org_name,
+            e.description,
+            s.work_date,
+            s.starts_at,
+            s.ends_at,
+            e.location,
+            s.day_reward,
+            a.status
+        FROM applications a
+        JOIN events e ON e.id = a.event_id
+        LEFT JOIN event_slots s ON s.id = a.slot_id
+        JOIN organizers o ON o.user_id = e.organizer_user_id
+        WHERE a.slot_id = %s AND a.student_user_id = %s
+        ORDER BY s.work_date DESC;
+    """
+    results = db.execute_query_sync(query, (slot_id, student_user_id))
+    if not results:
+        return None
+    return results
+
+
+
