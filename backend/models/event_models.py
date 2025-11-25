@@ -10,6 +10,19 @@ class EventResponse(BaseModel):
     location: str
     status: str
 
+# Model trả về cho danh sách Event (Upcoming/Ongoing)
+class EventListResponse(BaseModel):
+    id: str
+    title: str
+    description: Optional[str] = None
+    location: Optional[str] = None
+    status: str
+    organizer_user_id: str
+    org_name: str           # Tên BTC
+    event_start_time: datetime # Thời gian bắt đầu của slot sớm nhất
+    event_end_time: datetime   # Thời gian kết thúc của slot muộn nhất
+    total_slots: int
+
 # Model trả về Slot (Dùng cho API lấy chi tiết slot hoặc list slot)
 class SlotResponse(BaseModel):
     id: str         # Đổi từ slot_id thành id cho chuẩn chung
@@ -86,27 +99,6 @@ class UpdateEvent(BaseModel):
     description: Optional[str] = None
     location: Optional[str] = None
     status: Optional[str] = None
-
-
-class ApplyEvent(BaseModel):
-    event_id: str
-    slot_id: str
-    note: str
-
-class UpdateAttendance(BaseModel):
-    slot_id: str
-    student_user_id: str
-    attended: bool
-
-class ReviewApplication(BaseModel):
-    slot_id: str
-    student_user_id: str
-    approve: bool
-    reason: Optional[str] = None
-
-class CancelApplication(BaseModel): # For students cancel their applications
-    slot_id: str
- 
 
 class MessageResponse(BaseModel):
     message: str

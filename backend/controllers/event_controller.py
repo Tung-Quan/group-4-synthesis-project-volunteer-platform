@@ -19,6 +19,58 @@ def get_own_events(my_id):
         return None
     return events
 
+def get_upcoming_events():
+    """
+    Lấy các sự kiện MỚI (Chưa bắt đầu slot nào).
+    Sắp xếp: Sự kiện nào diễn ra sớm nhất thì lên đầu.
+    """
+    query = """
+        SELECT 
+            e.id, e.title, e.description, e.location, e.status,
+            e.organizer_user_id,
+            o.org_name,
+            -- Lấy thời gian bắt đầu sớm nhất của event này
+            MIN(s.work_date + s.starts_at) as event_start_time,
+            -- Lấy thời gian kết thúc muộn nhất
+            MAX(s.work_date + s.ends_at) as event_end_time,
+            -- Đếm tổng số slot
+            COUNT(s.id) as total_slots
+        FROM events e
+        JOIN event_slots s ON e.id = s.event_id
+        JOIN organizers o ON e.organizer_user_id = o.user_id
+        WHERE e.status = 'published'
+        GROUP BY e.id, o.org_name
+        -- ĐIỀU KIỆN : Slot sớm nhất phải nằm ở tương lai
+        HAVING MIN(s.work_date + s.starts_at) > NOW()
+        ORDER BY event_start_time ASC
+    """
+    return db.execute_query_sync(query)
+
+def get_ongoing_events():
+    """
+    Lấy các sự kiện ĐANG DIỄN RA (Đã bắt đầu nhưng chưa kết thúc).
+    Sắp xếp: Sự kiện nào sắp kết thúc thì lên đầu (để tạo cảm giác gấp rút).
+    """
+    query = """
+        SELECT 
+            e.id, e.title, e.description, e.location, e.status,
+            e.organizer_user_id,
+            o.org_name,
+            MIN(s.work_date + s.starts_at) as event_start_time,
+            MAX(s.work_date + s.ends_at) as event_end_time,
+            COUNT(s.id) as total_slots
+        FROM events e
+        JOIN event_slots s ON e.id = s.event_id
+        JOIN organizers o ON e.organizer_user_id = o.user_id
+        WHERE e.status = 'published'
+        GROUP BY e.id, o.org_name
+        -- ĐIỀU KIỆN: Đã bắt đầu (MIN <= NOW) VÀ Chưa kết thúc (MAX >= NOW)
+        HAVING MIN(s.work_date + s.starts_at) <= NOW() 
+           AND MAX(s.work_date + s.ends_at) >= NOW()
+        ORDER BY event_end_time ASC
+    """
+    return db.execute_query_sync(query)
+
 def get_event_by_id(id: str):
     query = """
             SELECT e.id, e.organizer_user_id, e.title, e.description, e.location, e.status,
