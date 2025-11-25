@@ -110,3 +110,12 @@ class CancelApplication(BaseModel): # For students cancel their applications
 
 class MessageResponse(BaseModel):
     message: str
+
+class SearchResult(BaseModel):
+    event_id: str
+    event_name: str
+    org_name: str
+    description: str
+    location: str
+    status: str
+    slots: list[SlotResponse]

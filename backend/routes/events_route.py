@@ -5,6 +5,23 @@ from ..dependencies import get_current_user
 
 router = APIRouter()
 
+#-------------------------- SEARCH FOR EVENT ------------------------------
+@router.get(
+    "/search",
+    response_model=list[event_models.SearchResult],
+    status_code=status.HTTP_200_OK
+)
+def search_events(q: str):
+    """
+    API Search hoạt động theo từ khóa.
+    Tìm theo: title, description, location, org_name.
+    """
+    results = event_controller.search_events(q)
+    if not results:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return results
+
+#-------------------------- EVENT APIs ------------------------------
 @router.get("/get-all-event", response_model=list[event_models.EventResponse], status_code=status.HTTP_200_OK)
 def get_events():
     result = event_controller.get_events()
@@ -108,3 +125,5 @@ def get_slot_detail_route(
             detail="Slot not found"
         )
     return result
+
+
