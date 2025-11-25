@@ -305,3 +305,91 @@ def get_slot_detail(slot_id: str):
         slot['day_reward'] = float(slot['day_reward'])
         
     return slot
+
+def search_events(keyword: str):
+    pattern = f"%{keyword}%"
+
+    query = """ 
+            SELECT
+                e.id AS event_id,
+                e.title AS event_name,
+                o.org_name,
+                e.description,
+                e.location,
+                e.status,
+                s.id AS slot_id,
+                s.event_id,
+                s.work_date,
+                s.starts_at,
+                s.ends_at,
+                s.capacity,
+                s.day_reward,
+                COALESCE(approved.approved_count, 0) AS approved_count,
+                COALESCE(applied.applied_count, 0) AS applied_count
+            FROM events e
+            JOIN organizers o ON o.user_id = e.organizer_user_id
+            LEFT JOIN event_slots s ON s.event_id = e.id
+
+            -- Count số người applied + approved cho mỗi slot 
+            LEFT JOIN (
+                SELECT slot_id, COUNT(*) AS approved_count
+                FROM applications
+                WHERE status = 'approved'
+                GROUP BY slot_id
+            ) approved ON approved.slot_id = s.id
+
+            LEFT JOIN (
+                SELECT slot_id, COUNT(*) AS applied_count
+                FROM applications
+                WHERE status = 'applied'
+                GROUP BY slot_id
+            ) applied ON applied.slot_id = s.id
+
+            WHERE 
+                e.title ILIKE %s OR
+                e.description ILIKE %s OR
+                e.location ILIKE %s OR
+                o.org_name ILIKE %s
+            ORDER BY e.created_at DESC;
+         """
+
+    rows = db.execute_query_sync(query, (pattern, pattern, pattern, pattern))
+
+    if not rows:
+        return []
+
+    # Group theo event_id
+    events = {}
+
+    for row in rows:
+        event_id = row["event_id"]
+
+        if event_id not in events:
+            events[event_id] = {
+                "event_id": event_id,
+                "event_name": row["event_name"],
+                "org_name": row["org_name"],
+                "description": row["description"],
+                "location": row["location"],
+                "status": row["status"],
+                "slots": []
+            }
+
+        # Nếu slot null (event chưa có slot)
+        if row["slot_id"] is None:
+            continue
+
+        events[event_id]["slots"].append({
+            "id": row["slot_id"],
+            "event_id": row["event_id"],
+            "work_date": row["work_date"],
+            "starts_at": row["starts_at"],
+            "ends_at": row["ends_at"],
+            "capacity": row["capacity"],
+            "day_reward": float(row["day_reward"]),
+            "approved_count": row["approved_count"],
+            "applied_count": row["applied_count"]
+        })
+
+    return list(events.values())
+
