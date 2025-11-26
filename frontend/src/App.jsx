@@ -311,10 +311,10 @@
 
 // export default App;
 
-import React, { useState } from 'react';
-import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 
-// Import Pages
 import HomePageLoggedOut from './pages/HomePageLoggedOut';
 import LoginPage from './pages/LoginPage';
 import HomePageLoggedIn from './pages/HomePageLoggedIn';
@@ -333,39 +333,45 @@ import ApplicationDetailPage from './pages/ApplicationDetailPage';
 
 // Import Helpers
 import ProtectedRoute from './components/common/ProtectedRoute';
-import MainLayout from './components/common/MainLayout'; // <-- 1. IMPORT LAYOUT
+import MainLayout from './components/common/MainLayout';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null);
+  const { isLoggedIn, user, setUser, logout, isLoading } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const handleLoginSuccess = (loggedInUser) => {
-    setIsLoggedIn(true);
-    setUser(loggedInUser);
-    const from = location.state?.from?.pathname || '/';
-    navigate(from, { replace: true });
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl font-semibold">Đang tải ứng dụng...</div>
+      </div>
+    );
+  }
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUser(null);
-    navigate('/home-logged-out');
-  };
+  // const handleLoginSuccess = (loggedInUser) => {
+  //   setIsLoggedIn(true);
+  //   setUser(loggedInUser);
+  //   const from = location.state?.from?.pathname || '/';
+  //   navigate(from, { replace: true });
+  // };
+
+  // const handleLogout = () => {
+  //   setIsLoggedIn(false);
+  //   setUser(null);
+  //   navigate('/home-logged-out');
+  // };
 
   return (
     <Routes>
       {/* === PUBLIC ROUTES (không dùng layout) === */}
       <Route path="/home-logged-out" element={<HomePageLoggedOut navigateTo={navigate} />} />
-      <Route path="/login" element={<LoginPage onLoginSuccess={handleLoginSuccess} navigateTo={navigate} />} />
+      <Route path="/login" element={<LoginPage />} />
 
       {/* === PRIVATE ROUTES (sử dụng layout và được bảo vệ) === */}
       <Route 
         path="/" 
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} user={user}>
-            <MainLayout isLoggedIn={isLoggedIn} user={user} onLogout={handleLogout} />
+            <MainLayout isLoggedIn={isLoggedIn} user={user} onLogout={logout} />
           </ProtectedRoute>
         }
       >
@@ -376,7 +382,7 @@ function App() {
 
         {/* --- Routes chung --- */}
         <Route path="search" element={<SearchResultsPage />} />
-        <Route path="profile" element={<ProfilePage user={user} />} />
+        <Route path="profile" element={<ProfilePage user={user} setUser={setUser} />} />
         <Route path="activities/new" element={<NewActivitiesPage />} />
         <Route path="activities/current" element={<CurrentActivitiesPage />} />
         <Route path="activities/:activityId" element={<ActivityDetailPage user={user} />} />
@@ -385,7 +391,7 @@ function App() {
         <Route 
           path="participating" 
           element={
-            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['VOLUNTEER', 'BOTH']}>
+            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['STUDENT']}>
               <ParticipatingPage />
             </ProtectedRoute>
           } 
@@ -393,7 +399,7 @@ function App() {
         <Route 
           path="history" 
           element={
-            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['VOLUNTEER', 'BOTH']}>
+            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['STUDENT']}>
               <HistoryPage />
             </ProtectedRoute>
           } 
@@ -403,7 +409,7 @@ function App() {
         <Route 
           path="organizer/dashboard" 
           element={
-            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER', 'BOTH']}>
+            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
               <ActivityDashboard />
             </ProtectedRoute>
           } 
@@ -411,7 +417,7 @@ function App() {
         <Route 
           path="organizer/dashboard/:activityId" 
           element={
-            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER', 'BOTH']}>
+            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
               <ActivityDetailDashboard user={user} />
             </ProtectedRoute>
           }
@@ -419,7 +425,7 @@ function App() {
         <Route 
           path="organizer/applications" 
           element={
-            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER', 'BOTH']}>
+            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
               <ApplicationReviewPage />
             </ProtectedRoute>
           } 
@@ -427,14 +433,13 @@ function App() {
         <Route 
           path="organizer/applications/:appId" 
           element={
-            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER', 'BOTH']}>
+            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
               <ApplicationDetailPage user={user} />
             </ProtectedRoute>
           } 
         />
       </Route>
 
-      {/* Fallback Route: Nếu không khớp route nào, điều hướng về trang chủ phù hợp */}
       <Route path="*" element={<Navigate to={isLoggedIn ? "/" : "/home-logged-out"} replace />} />
     </Routes>
   );

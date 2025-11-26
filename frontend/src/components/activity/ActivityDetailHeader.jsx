@@ -7,12 +7,10 @@ const CloverIcon = () => (
 function ActivityDetailHeader({ activity, onRegisterClick, userType, onCancelClick, applicationStatus }) {
   // Hàm render nút bấm dựa trên các điều kiện
   const renderActionButtons = () => {
-    // Nếu là Organizer, không hiển thị nút nào
     if (userType === 'ORGANIZER') {
       return null;
     }
 
-    // Nếu hoạt động đã hoàn thành
     if (applicationStatus && applicationStatus.startsWith('completed')) {
       return (
         <div className="bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-lg cursor-default">
@@ -21,7 +19,6 @@ function ActivityDetailHeader({ activity, onRegisterClick, userType, onCancelCli
       );
     }
     
-    // Các trạng thái khác
     switch (applicationStatus) {
       case 'pending':
         return (
@@ -71,7 +68,7 @@ function ActivityDetailHeader({ activity, onRegisterClick, userType, onCancelCli
   
   return (
     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-      
+
       <div className="flex items-center justify-between pb-4 border-b border-gray-200">
         <h1 className="text-xl font-bold">
           <span className="text-red-600">{activity.id}</span> - <span className="text-blue-700">{activity.title}</span>
@@ -79,22 +76,25 @@ function ActivityDetailHeader({ activity, onRegisterClick, userType, onCancelCli
         {renderActionButtons()}
       </div>
 
-      <div className="flex flex-col space-y-2 pt-4.">
-        <div className="flex items-center">
-          <CloverIcon />
-          <p className="text-gray-700">
-            Thời gian: <span className="text-green-600 font-semibold">{activity.time}</span>
-          </p>
-        </div>
-        
-        <div className="flex items-center">
-          <CloverIcon />
-          <p className="text-gray-700">
-            Tại: <span className="text-pink-600 font-semibold">{activity.locationDetail}</span>
-          </p>
-        </div>
+      <div className="flex flex-col space-y-2 pt-4">
+        {activity.time && (
+          <div className="flex items-center">
+            <CloverIcon />
+            <p className="text-gray-700">
+              Thời gian: <span className="text-green-600 font-semibold">{activity.time}</span>
+            </p>
+          </div>
+        )}
+
+        {activity.locationDetail && (
+          <div className="flex items-center">
+            <CloverIcon />
+            <p className="text-gray-700">
+              Tại: <span className="text-pink-600 font-semibold">{activity.locationDetail}</span>
+            </p>
+          </div>
+        )}
       </div>
-      
     </div>
   );
 }

@@ -1,22 +1,42 @@
 import React, { useState } from 'react';
-import { findUserByCredentials } from '../mockdata/mockUser';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // 1. IMPORT useAuth
+import apiClient, { setCsrfToken } from '../api/apiClient'; // 2. IMPORT apiClient
 
-function LoginForm({ onLoginSuccess }) {
-  const [email, setEmail] = useState(''); 
+function LoginForm() {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState(null); // State để hiển thị lỗi
+  const [isLoading, setIsLoading] = useState(false); // State cho trạng thái loading
 
-  const handleLogin = (e) => {
+  const { login } = useAuth(); // 3. LẤY HÀM login TỪ CONTEXT
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log('Đang thử đăng nhập với:', { email, password });
+    setIsLoading(true);
+    setError(null);
 
-    // Gọi hàm giả lập để tìm user
-    const user = findUserByCredentials(email, password);
+    try {
+      const response = await apiClient.post('/auth/login', {
+        email: email,
+        password: password,
+      });
 
-    if (user) {
-      alert(`Đăng nhập thành công với vai trò ${user.type}!`);
-      onLoginSuccess(user);
-    } else {
-      alert('Email hoặc mật khẩu không đúng.');
+      const { user, csrf_token } = response.data;
+      setCsrfToken(csrf_token);
+      login(user);
+
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
+
+    } catch (err) {
+      const errorMessage = err.response?.data?.detail || 'Email hoặc mật khẩu không đúng.';
+      setError(errorMessage);
+      console.error("Login failed:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -59,12 +79,19 @@ function LoginForm({ onLoginSuccess }) {
           />
         </div>
         
+        {error && (
+          <div className="text-red-600 text-sm text-center p-2 bg-red-100 rounded">
+            {error}
+          </div>
+        )}
+
         <div className="flex items-center justify-start space-x-4 pt-2">
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md shadow-md transition-colors duration-200"
+            disabled={isLoading}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md shadow-md transition-colors duration-200 disabled:bg-blue-300 disabled:cursor-not-allowed"
           >
-            Đăng nhập
+            {isLoading ? 'Đang xử lý...' : 'Đăng nhập'}
           </button>
           <button
             type="button"
@@ -76,11 +103,11 @@ function LoginForm({ onLoginSuccess }) {
         </div>
       </form>
       
-      <div className="mt-6 text-left">
+      {/* <div className="mt-6 text-left">
         <a href="#" className="text-blue-600 hover:underline">
           Đổi mật khẩu?
         </a>
-      </div>
+      </div> */}
     </div>
   );
 }
