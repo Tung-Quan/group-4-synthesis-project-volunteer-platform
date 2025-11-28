@@ -1,7 +1,6 @@
 import React from 'react';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
-import ActivityStats from '../components/activity/ActivityStats';
 import ActivityContent from '../components/activity/ActivityContent';
 import ActivityDetailDashboardHeader from '../components/activity/ActivityDetailDashboardHeader';
 import { useParams, useNavigate } from 'react-router-dom';

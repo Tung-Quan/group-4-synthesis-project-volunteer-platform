@@ -264,7 +264,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import DropdownMenu from './DropdownMenu.jsx';
 
-// Thêm prop 'isLoggedIn' vào đây
 function Header({ isLoginPage = false, isLoggedIn, onLogout, user }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -345,9 +344,9 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user }) {
         {isLoggedIn && user ? (
           // Menu khi đã đăng nhập
           <>
-            <DropdownMenu title={user.type === 'VOLUNTEER' ? 'Cá nhân' : 'Quản lý'} items={user.type === 'VOLUNTEER' ? volunteerMenuItems : organizerMenuItems} onMenuItemClick={handlePersonalMenuClick} />
+            <DropdownMenu title={user.type === 'STUDENT' ? 'Cá nhân' : 'Quản lý'} items={user.type === 'STUDENT' ? volunteerMenuItems : organizerMenuItems} onMenuItemClick={handlePersonalMenuClick} />
             <DropdownMenu title="Hoạt động" items={activityMenuItems} onMenuItemClick={handleActivityMenuClick} />
-            <DropdownMenu title={user.display_name} items={userMenuItems} onMenuItemClick={handleUserMenuClick} />
+            <DropdownMenu title={user.full_name || user.email} items={userMenuItems} onMenuItemClick={handleUserMenuClick} />
           </>
         ) : (
           // Menu khi CHƯA đăng nhập
@@ -382,9 +381,9 @@ function Header({ isLoginPage = false, isLoggedIn, onLogout, user }) {
           <div className="flex flex-col items-center space-y-4 py-4">
             {isLoggedIn && user ? (
               <>
-                <DropdownMenu title={user.type === 'VOLUNTEER' ? 'Cá nhân' : 'Quản lý'} items={user.type === 'VOLUNTEER' ? volunteerMenuItems : organizerMenuItems} onMenuItemClick={handlePersonalMenuClick} />
+                <DropdownMenu title={user.type === 'STUDENT' ? 'Cá nhân' : 'Quản lý'} items={user.type === 'STUDENT' ? volunteerMenuItems : organizerMenuItems} onMenuItemClick={handlePersonalMenuClick} />
                 <DropdownMenu title="Hoạt động" items={activityMenuItems} onMenuItemClick={handleActivityMenuClick} />
-                <DropdownMenu title={user.display_name} items={userMenuItems} onMenuItemClick={handleUserMenuClick} />
+                <DropdownMenu title={user.full_name || user.email} items={userMenuItems} onMenuItemClick={handleUserMenuClick} />
               </>
             ) : (
               <>

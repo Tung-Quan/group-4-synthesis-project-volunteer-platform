@@ -5,16 +5,45 @@ from fastapi import Request
 from ..dependencies import verify_csrf
 import json
 
+
 def apply_event(request, student_user_id):
+    # check_query = """
+    #     SELECT event_id
+    #     FROM applications
+    #     WHERE event_id = %s AND student_user_id = %s AND slot_id = %s;
+    # """
+    # existing = db.fetch_one_sync(
+    #     check_query, (request.event_id, student_user_id, request.slot_id))
+    # if existing:
+    #     return {"message": "Already registered for this event"}, 400
+
     check_query = """
-        SELECT event_id
+        SELECT status
         FROM applications
         WHERE event_id = %s AND student_user_id = %s AND slot_id = %s;
     """
-    existing = db.fetch_one_sync(check_query, (request.event_id, student_user_id, request.slot_id))
+    existing = db.fetch_one_sync(
+        check_query, (request.event_id, student_user_id, request.slot_id))
+
+    # LOGIC MỚI Ở ĐÂY
     if existing:
-        return {"message": "Already registered for this event"}, 400
-    
+        # Nếu đã tồn tại nhưng trạng thái là withdrawn hoặc rejected, cho phép cập nhật lại thành applied
+        if existing['status'] in ('withdrawn', 'rejected'):
+            reactivate_query = """
+                UPDATE applications
+                SET status = 'applied', note = %s, updated_at = now()
+                WHERE event_id = %s AND student_user_id = %s AND slot_id = %s
+                RETURNING event_id;
+            """
+            result = db.execute_query_sync(
+                reactivate_query, (request.note, request.event_id, student_user_id, request.slot_id))
+            if result:
+                return {"message": "Successfully re-registered!"}, 201
+            else:
+                return {"message": "Failed to re-register."}, 500
+        else:
+            return {"message": "Already registered for this event"}, 400
+
     slot_query = """
         SELECT capacity
         FROM event_slots
@@ -31,7 +60,8 @@ def apply_event(request, student_user_id):
         FROM applications
         WHERE event_id = %s AND slot_id = %s;
     """
-    count_row = db.fetch_one_sync(count_query, (request.event_id,request.slot_id))
+    count_row = db.fetch_one_sync(
+        count_query, (request.event_id, request.slot_id))
     current = count_row["current_count"] if count_row else 0
 
     if current >= capacity:
@@ -55,6 +85,7 @@ def apply_event(request, student_user_id):
         return {"message": "Failed registration. Please try again"}, 500
 
     return {"message": "Successfully registered!"}, 201
+
 
 def review_application(event_id, request, organizer_id):
     app_query = """
@@ -121,7 +152,6 @@ def review_application(event_id, request, organizer_id):
     }, 200
 
 
-    
 def mark_attendance(event_id, request, organizer_id: str):
     event_query = """
         SELECT organizer_user_id
@@ -190,7 +220,8 @@ def cancel_application(event_id, request, student_user_id: str):
         FROM applications
         WHERE event_id = %s AND student_user_id = %s AND slot_id = %s;
     """
-    app = db.fetch_one_sync(query, (event_id, student_user_id, request.slot_id))
+    app = db.fetch_one_sync(
+        query, (event_id, student_user_id, request.slot_id))
 
     if not app:
         return {"message": "Application not found"}, 404
@@ -209,16 +240,20 @@ def cancel_application(event_id, request, student_user_id: str):
         RETURNING event_id, student_user_id;
     """
 
-    result = db.execute_query_sync(update_query, (event_id, student_user_id, request.slot_id))
+    result = db.execute_query_sync(
+        update_query, (event_id, student_user_id, request.slot_id))
 
     if not result:
         return {"message": "Failed to cancel application"}, 500
 
     return {"message": "Application withdrawn successfully"}, 200
 
+
 def get_history(student_user_id):
     query = """
         SELECT
+            a.event_id,
+            a.slot_id,       
             e.title AS event_name,
             s.work_date,
             s.starts_at,
@@ -229,7 +264,7 @@ def get_history(student_user_id):
         JOIN events e ON e.id = a.event_id
         LEFT JOIN event_slots s ON s.id = a.slot_id
         WHERE a.student_user_id = %s
-        AND a.status = 'attended'
+        AND a.status IN ('attended', 'absent', 'rejected', 'withdrawn')
         ORDER BY s.work_date DESC;
         """
     results = db.execute_query_sync(query, (student_user_id,))
@@ -237,9 +272,12 @@ def get_history(student_user_id):
         return None
     return results
 
+
 def get_participating(student_user_id):
     query = """
         SELECT
+            a.event_id,
+            a.slot_id,      
             e.title AS event_name,
             s.work_date,
             s.starts_at,
@@ -257,6 +295,7 @@ def get_participating(student_user_id):
     if not results:
         return None
     return results
+
 
 def get_application_details(slot_id, student_user_id):
     query = """
@@ -282,6 +321,3 @@ def get_application_details(slot_id, student_user_id):
     if not results:
         return None
     return results
-
-
-
