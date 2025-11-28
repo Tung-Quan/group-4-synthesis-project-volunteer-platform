@@ -347,19 +347,6 @@ function App() {
     );
   }
 
-  // const handleLoginSuccess = (loggedInUser) => {
-  //   setIsLoggedIn(true);
-  //   setUser(loggedInUser);
-  //   const from = location.state?.from?.pathname || '/';
-  //   navigate(from, { replace: true });
-  // };
-
-  // const handleLogout = () => {
-  //   setIsLoggedIn(false);
-  //   setUser(null);
-  //   navigate('/home-logged-out');
-  // };
-
   return (
     <Routes>
       {/* === PUBLIC ROUTES (không dùng layout) === */}

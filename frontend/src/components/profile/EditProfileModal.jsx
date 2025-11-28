@@ -4,9 +4,6 @@ import { useState, useEffect } from 'react';
 function EditProfileModal({ isOpen, onClose, user, onSave }) {
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
-
-    // useEffect để cập nhật state của form khi prop 'user' thay đổi
-    // Điều này đảm bảo khi modal mở, nó sẽ hiển thị thông tin mới nhất
     useEffect(() => {
         if (user) {
             setFullName(user.full_name || '');
@@ -39,7 +36,7 @@ function EditProfileModal({ isOpen, onClose, user, onSave }) {
                 <div className="p-6 space-y-4">
                     <div>
                         <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                            Tên đầy đủ
+                            Tên
                         </label>
                         <input
                             type="text"

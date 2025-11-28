@@ -55,36 +55,73 @@ apiClient.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        // Chỉ xử lý lỗi 401 và đây không phải là request thử lại
+        // // Chỉ xử lý lỗi 401 và đây không phải là request thử lại
+        // if (error.response?.status === 401 && !originalRequest._retry) {
+        //     if (isRefreshing) {
+        //         return new Promise((resolve, reject) => {
+        //             failedQueue.push({ resolve, reject });
+        //         })
+        //             .then(token => {
+        //                 originalRequest.headers['Authorization'] = 'Bearer ' + token; 
+        //                 return apiClient(originalRequest);
+        //             })
+        //             .catch(err => {
+        //                 return Promise.reject(err);
+        //             });
+        //     }
+
+        //     originalRequest._retry = true;
+        //     isRefreshing = true;
+
+        //     try {
+        //         const refreshResponse = await apiClient.post('/auth/refresh');
+        //         console.log("Token refreshed successfully.");
+        //         processQueue(null, null);
+
+        //         return apiClient(originalRequest);
+
+        //     } catch (refreshError) {
+        //         console.error("Failed to refresh token:", refreshError);
+        //         processQueue(refreshError, null);
+        //         // có thể gọi hàm logout từ AuthContext ở đây)
+        //         window.location.href = '/login';
+        //         return Promise.reject(refreshError);
+        //     } finally {
+        //         isRefreshing = false;
+        //     }
+        // }
+        // return Promise.reject(error);
+        if (originalRequest.url === '/users/profile/me' && error.response?.status === 401) {
+             return Promise.reject(error);
+        }
         if (error.response?.status === 401 && !originalRequest._retry) {
+            // Nếu lỗi đến từ chính API refresh -> Logout
+            if (originalRequest.url === '/auth/refresh') {
+                // Không redirect window.location.href = '/login' ở đây vội
+                // Để AuthContext tự xử lý state logout
+                return Promise.reject(error);
+            }
+
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject });
                 })
-                    .then(token => {
-                        originalRequest.headers['Authorization'] = 'Bearer ' + token; 
-                        return apiClient(originalRequest);
-                    })
-                    .catch(err => {
-                        return Promise.reject(err);
-                    });
+                .then(() => apiClient(originalRequest))
+                .catch(err => Promise.reject(err));
             }
 
             originalRequest._retry = true;
             isRefreshing = true;
 
             try {
-                const refreshResponse = await apiClient.post('/auth/refresh');
-                console.log("Token refreshed successfully.");
+                await apiClient.post('/auth/refresh');
+                // console.log("Token refreshed.");
                 processQueue(null, null);
-
                 return apiClient(originalRequest);
-
             } catch (refreshError) {
-                console.error("Failed to refresh token:", refreshError);
                 processQueue(refreshError, null);
-                // có thể gọi hàm logout từ AuthContext ở đây)
-                window.location.href = '/login';
+                // Redirect về login khi session thực sự hết hạn và không cứu được
+                window.location.href = '/login'; 
                 return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;

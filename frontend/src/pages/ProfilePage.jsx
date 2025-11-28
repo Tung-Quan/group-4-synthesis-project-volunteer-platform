@@ -192,7 +192,7 @@ function ProfilePage() {
 
     const handleSaveProfile = async (updatedData) => {
         try {
-            const response = await apiClient.put('/users/profile/me', updatedData);
+            const response = await apiClient.patch('/users/profile/me', updatedData);
             setUser(response.data);
             alert("Hồ sơ đã được cập nhật thành công!");
             setIsEditModalOpen(false);
@@ -212,7 +212,13 @@ function ProfilePage() {
     return (
         <>
             <div className="mb-4">
-                <button onClick={() => navigate(-1)} className="...">Quay về</button>
+                <button
+                    onClick={() => navigate(-1)}
+                    className="flex items-center text-gray-700 font-bold font-serif hover:text-blue-600 transition-colors duration-200"
+                >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Quay về
+                </button>
             </div>
 
             <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-gray-200">
@@ -226,7 +232,7 @@ function ProfilePage() {
                     <InfoRow label="Vai trò" value={user.type} isBadge={true} />
                 </div>
                 <div className="mt-6 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                    <button onClick={() => setIsEditModalOpen(true)} className="...">Chỉnh sửa hồ sơ</button>
+                    <button onClick={() => setIsEditModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Chỉnh sửa hồ sơ</button>
                 </div>
             </div>
 

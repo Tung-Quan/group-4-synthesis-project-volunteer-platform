@@ -6,10 +6,10 @@ import apiClient, { setCsrfToken } from '../api/apiClient'; // 2. IMPORT apiClie
 function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(null); // State để hiển thị lỗi
-  const [isLoading, setIsLoading] = useState(false); // State cho trạng thái loading
+  const [error, setError] = useState(null); 
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { login } = useAuth(); // 3. LẤY HÀM login TỪ CONTEXT
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
