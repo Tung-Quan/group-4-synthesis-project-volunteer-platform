@@ -321,3 +321,21 @@ def get_application_details(slot_id, student_user_id):
     if not results:
         return None
     return results
+
+def get_application_by_slotId(event_id, slot_id):
+    query = """
+        SELECT
+            u.full_name AS student_name,
+            s.student_no,
+            a.note,
+            a.status
+        FROM applications a
+        JOIN users u ON a.student_user_id = u.id
+        JOIN students s ON a.student_user_id = s.user_id
+        WHERE a.event_id = %s AND a.slot_id = %s;
+        """
+    
+    results = db.execute_query_sync(query, (event_id, slot_id))
+    if not results:
+        return None
+    return results

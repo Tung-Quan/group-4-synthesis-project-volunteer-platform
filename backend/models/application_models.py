@@ -48,3 +48,9 @@ class ApplicationDetail(BaseModel):
     location: str
     day_reward: float
     status: str
+
+class ApplicationResponse(BaseModel):
+    student_name: str
+    student_no: str
+    note: str
+    status: str
