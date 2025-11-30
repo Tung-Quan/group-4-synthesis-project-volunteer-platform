@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // 1. IMPORT useAuth
-import apiClient, { setCsrfToken } from '../api/apiClient'; // 2. IMPORT apiClient
+import { useAuth } from '../context/AuthContext'; 
+import apiClient from '../api/apiClient';
 
 function LoginForm() {
   const [email, setEmail] = useState('');
@@ -25,8 +25,7 @@ function LoginForm() {
       });
 
       const { user, csrf_token } = response.data;
-      setCsrfToken(csrf_token);
-      login(user);
+      login(user, csrf_token);
 
       const from = location.state?.from?.pathname || '/';
       navigate(from, { replace: true });
@@ -102,12 +101,6 @@ function LoginForm() {
           </button>
         </div>
       </form>
-      
-      {/* <div className="mt-6 text-left">
-        <a href="#" className="text-blue-600 hover:underline">
-          Đổi mật khẩu?
-        </a>
-      </div> */}
     </div>
   );
 }

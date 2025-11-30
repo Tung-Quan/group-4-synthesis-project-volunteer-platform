@@ -7,7 +7,7 @@ function SearchSection() {
   const handleSearch = (e) => {
     e.preventDefault(); 
     if (searchTerm.trim()) { 
-      navigate(`/search?query=${encodeURIComponent(searchTerm)}`);    
+      navigate(`/search?q=${encodeURIComponent(searchTerm)}`);    
     }
   };
 
