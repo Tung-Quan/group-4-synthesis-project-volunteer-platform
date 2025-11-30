@@ -334,6 +334,7 @@ import ApplicationDetailPage from './pages/ApplicationDetailPage';
 // Import Helpers
 import ProtectedRoute from './components/common/ProtectedRoute';
 import MainLayout from './components/common/MainLayout';
+import CreateNewActivityPage from './pages/CreateNewActivityPage';
 
 function App() {
   const { isLoggedIn, user, setUser, logout, isLoading } = useAuth();
@@ -402,10 +403,18 @@ function App() {
           } 
         />
         <Route 
+          path="organizer/activities/new" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
+              <CreateNewActivityPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
           path="organizer/dashboard/:activityId" 
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
-              <ActivityDetailDashboard user={user} />
+              <ActivityDetailDashboard />
             </ProtectedRoute>
           }
         />
