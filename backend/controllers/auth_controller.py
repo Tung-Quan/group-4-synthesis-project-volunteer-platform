@@ -10,6 +10,7 @@ import psycopg2
 import jwt
 from jwt import PyJWTError
 
+
 def register(request: RegisterRequest) -> dict:
     # simple validation/normalization
     email = request.email.lower().strip()
@@ -24,10 +25,10 @@ def register(request: RegisterRequest) -> dict:
     if request.type and request.type not in valid_types:
         return {"error": "Invalid type", "status_code": 400}
     # Check if user already exists
-    existing_user = db.fetch_one_sync("SELECT 1 FROM users WHERE email = %s", (email,))
+    existing_user = db.fetch_one_sync(
+        "SELECT 1 FROM users WHERE email = %s", (email,))
     if existing_user:
         return {"error": "Email already registered", "status_code": 409}
-    
 
     pwd_hash = hash_password(request.password)
     query = """
@@ -39,30 +40,35 @@ def register(request: RegisterRequest) -> dict:
 
     try:
         new_user_row = db.execute_query_sync(query, params)
-        
+
         if new_user_row:
             user = new_user_row[0]
             user_id = user.get('id')
-            
+
             # INSERT type INFO
             try:
                 if request.type == 'STUDENT':
                     if not request.student_no:
-                        db.execute_query_sync("DELETE FROM users WHERE id = %s", (user_id,))
+                        db.execute_query_sync(
+                            "DELETE FROM users WHERE id = %s", (user_id,))
                         return {"error": "student_no required", "status_code": 400}
-                    db.execute_query_sync("INSERT INTO students (user_id, student_no) VALUES (%s, %s)", (user_id, request.student_no))
-                
+                    db.execute_query_sync(
+                        "INSERT INTO students (user_id, student_no) VALUES (%s, %s)", (user_id, request.student_no))
+
                 elif request.type == 'ORGANIZER':
                     if not request.organizer_no:
-                        db.execute_query_sync("DELETE FROM users WHERE id = %s", (user_id,))
+                        db.execute_query_sync(
+                            "DELETE FROM users WHERE id = %s", (user_id,))
                         return {"error": "organizer_no required", "status_code": 400}
-                    db.execute_query_sync("INSERT INTO organizers (user_id, organizer_no, org_name) VALUES (%s, %s, %s)", (user_id, request.organizer_no, request.org_name))
-            
+                    db.execute_query_sync("INSERT INTO organizers (user_id, organizer_no, org_name) VALUES (%s, %s, %s)", (
+                        user_id, request.organizer_no, request.org_name))
+
             except Exception as e:
                 logger.exception(f"Failed to create type record: {e}")
-                db.execute_query_sync("DELETE FROM users WHERE id = %s", (user_id,))
+                db.execute_query_sync(
+                    "DELETE FROM users WHERE id = %s", (user_id,))
                 return {"error": "Registration failed. Please try again.", "status_code": 500}
-            
+
             return user
         else:
             return {"error": "Failed to create user", "status_code": 500}
@@ -72,25 +78,28 @@ def register(request: RegisterRequest) -> dict:
         # catch error when db take 2 requests to create same email at the same time
         return {"error": "Database error during registration", "status_code": 500}
 
+
 def login(request: LoginRequest) -> dict:
     # normalize email before lookup
     email = request.email.lower().strip()
 
-    user = db.fetch_one_sync("SELECT id, email, password_hash, type FROM users WHERE email = %s", (email,))
+    user = db.fetch_one_sync(
+        "SELECT id, email, password_hash, type FROM users WHERE email = %s", (email,))
 
     if not user or not verify_password(request.password, user['password_hash']):
         return {"error": "Invalid email or password", "status_code": 401}
-    
+
     _, _, _, refresh_token_expire_minutes, _ = ENV().get_jwt_secret()
     user_id = str(user['id'])
 
-    access_token = create_access_token(data={"sub": user_id}, token_type="access")
+    access_token = create_access_token(
+        data={"sub": user_id}, token_type="access")
     refresh_token = create_access_token(
         data={"sub": user_id},
         expires_delta=timedelta(minutes=refresh_token_expire_minutes),
         token_type="refresh",
     )
-    
+
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -98,12 +107,15 @@ def login(request: LoginRequest) -> dict:
         "user": {"id": user_id, "email": email, "type": user['type']}
     }
 
+
 def logout(request, response, user_id: str) -> dict:
     # For JWT, logout is typically handled client-side by deleting tokens (cookies).
     cookie_domain = getattr(ENV(), 'COOKIE_DOMAIN', None)
     try:
-        response.delete_cookie(key="access_token", path='/', domain=cookie_domain)
-        response.delete_cookie(key="refresh_token", path='/auth/refresh', domain=cookie_domain)
+        response.delete_cookie(
+            key="access_token", path='/', domain=cookie_domain)
+        response.delete_cookie(key="refresh_token",
+                               path='/auth/refresh', domain=cookie_domain)
         # response.delete_cookie(key="session", path='/', domain=cookie_domain) #delete session cookie
     except Exception:
         # fallback to simple deletion if domain/path fails
@@ -119,13 +131,15 @@ def logout(request, response, user_id: str) -> dict:
         pass
 
     logger.info(f"User {user_id} logged out. (logout handler executed)")
-    
+
     return {"message": "Logout successful", "user_id": user_id}
+
 
 def attach_csrf_token(session: dict) -> str:
     if "csrf_token" not in session:
-        session["csrf_token"]= make_csrf()
+        session["csrf_token"] = make_csrf()
     return session["csrf_token"]
+
 
 def regenerate_csrf_token(session: dict) -> str:
     """
@@ -135,6 +149,7 @@ def regenerate_csrf_token(session: dict) -> str:
     new_token = make_csrf()
     session["csrf_token"] = new_token
     return new_token
+
 
 def refresh(refresh_token: str) -> dict:
     try:
