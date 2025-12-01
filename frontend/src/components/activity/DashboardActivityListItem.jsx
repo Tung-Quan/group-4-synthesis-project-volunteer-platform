@@ -4,7 +4,11 @@ import { useNavigate } from 'react-router-dom';
 function DashboardActivityListItem({ activity }) {
   const navigate = useNavigate();
   const handleDetailsClick = () => {
+<<<<<<< HEAD
     navigate(`/organizer/dashboard/${activity.id}`);
+=======
+    navigate(`/organizer/dashboard/:${activity.id}`);
+>>>>>>> main
   }
   return (
     <div className="py-4 border-b border-gray-200 flex items-center justify-between">

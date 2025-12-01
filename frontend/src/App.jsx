@@ -17,6 +17,7 @@ import ActivityDashboard from './pages/ActivityDashboard';
 import ActivityDetailDashboard from './pages/ActivityDetailDashboard';
 import ApplicationReviewPage from './pages/ApplicationReviewPage';
 import ApplicationDetailPage from './pages/ApplicationDetailPage';
+import CreateNewActivityPage from './pages/CreateNewActivityPage';
 
 // Import Helpers
 import ProtectedRoute from './components/common/ProtectedRoute';
