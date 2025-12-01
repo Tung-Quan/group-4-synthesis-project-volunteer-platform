@@ -67,7 +67,7 @@ This repository includes a minimal FastAPI-based backend under the `backend/` fo
 
 	```powershell
 	# from repository root
-	uvicorn backend.backend:app --host 0.0.0.0 --reload
+	uvicorn backend.main:app --host 0.0.0.0 --reload
 	```
 
 5. Open http://localhost:8000/docs to see the interactive OpenAPI UI.

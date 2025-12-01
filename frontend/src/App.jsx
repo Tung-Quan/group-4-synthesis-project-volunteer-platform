@@ -22,6 +22,7 @@ import CreateNewActivityPage from './pages/CreateNewActivityPage';
 // Import Helpers
 import ProtectedRoute from './components/common/ProtectedRoute';
 import MainLayout from './components/common/MainLayout';
+import CreateNewActivityPage from './pages/CreateNewActivityPage';
 
 function App() {
   const { isLoggedIn, user, setUser, isLoading } = useAuth();
@@ -102,7 +103,7 @@ function App() {
           path="organizer/dashboard/:activityId" 
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
-              <ActivityDetailDashboard user={user} />
+              <ActivityDetailDashboard />
             </ProtectedRoute>
           }
         />
