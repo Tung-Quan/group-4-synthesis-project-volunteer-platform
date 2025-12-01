@@ -16,7 +16,7 @@ function ActivityDetailDashboard() {
 
   const handleModifyClick = () => {
     console.log(`Chỉnh sửa hoạt động ID: ${activityId}`);
-    navigate(`organizer/dashboard/:${activityId}/edit`);
+    navigate(`organizer/dashboard/${activityId}/edit`);
   };
 
   useEffect(() => {
