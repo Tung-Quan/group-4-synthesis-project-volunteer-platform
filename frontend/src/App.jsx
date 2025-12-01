@@ -22,7 +22,6 @@ import CreateNewActivityPage from './pages/CreateNewActivityPage';
 // Import Helpers
 import ProtectedRoute from './components/common/ProtectedRoute';
 import MainLayout from './components/common/MainLayout';
-import CreateNewActivityPage from './pages/CreateNewActivityPage';
 
 function App() {
   const { isLoggedIn, user, setUser, isLoading } = useAuth();
