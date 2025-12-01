@@ -3,6 +3,19 @@ import React, { useState } from 'react';
 // Component con cho từng ca
 const ShiftListItem = ({ shift, onSelect, isSelected }) => {
     const isFull = shift.registered >= shift.capacity;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); 
+    const workDate = new Date(shift.work_date);
+    workDate.setMinutes(workDate.getMinutes() + workDate.getTimezoneOffset());
+    const isPastDate = workDate < today;
+    const isDisabled = isFull || isPastDate;
+
+    // Xác định nội dung của nút
+    let buttonText = 'Chọn ca này';
+    if (isFull) buttonText = 'Đã đầy';
+    if (isPastDate) buttonText = 'Đã quá hạn';
+    if (isSelected) buttonText = 'Đang chọn';
+
     return (
         <div
             className={`p-3 border-b border-gray-200 last:border-b-0 transition-colors duration-200 ${isSelected ? 'bg-blue-50' : ''}`}
@@ -15,7 +28,7 @@ const ShiftListItem = ({ shift, onSelect, isSelected }) => {
                 </div>
                 <button
                     onClick={() => onSelect(shift.id)}
-                    disabled={isFull}
+                    disabled={isDisabled}
                     className={`mt-2 sm:mt-0 font-bold py-2 px-5 rounded-lg text-sm transition-colors duration-200
             ${isFull
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -24,7 +37,7 @@ const ShiftListItem = ({ shift, onSelect, isSelected }) => {
                                 : 'bg-green-600 hover:bg-green-700 text-white'
                         }`}
                 >
-                    {isFull ? 'Đã đầy' : isSelected ? 'Đang chọn' : 'Chọn ca này'}
+                    {buttonText}
                 </button>
             </div>
         </div>
@@ -33,15 +46,24 @@ const ShiftListItem = ({ shift, onSelect, isSelected }) => {
 
 
 function ShiftsModal({ isOpen, onClose, shifts = [], onRegisterShift, activityTitle }) {
-    // State để theo dõi ca nào đang được chọn
     const [selectedShiftId, setSelectedShiftId] = useState(null);
-    // State để lưu nội dung ghi chú
     const [note, setNote] = useState('');
 
     if (!isOpen) return null;
 
     const handleSelectShift = (shiftId) => {
         // Nếu bấm lại ca đang chọn, bỏ chọn nó. Ngược lại, chọn ca mới.
+        const selectedShift = shifts.find(s => s.id === shiftId);
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const workDate = new Date(selectedShift.work_date);
+        workDate.setMinutes(workDate.getMinutes() + workDate.getTimezoneOffset());
+
+        // Không cho phép chọn ca đã quá hạn
+        if (workDate < today) {
+            return;
+        }
         setSelectedShiftId(prevId => (prevId === shiftId ? null : shiftId));
     };
 

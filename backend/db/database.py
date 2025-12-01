@@ -4,8 +4,9 @@ import logging
 from ..config.env import ENV, env_settings
 from ..config.logger import logger
 
-logger=logging.getLogger('_name_')
+logger = logging.getLogger('_name_')
 logger.info("Initializing database connection...")
+
 
 class DataBase:
     """Thread-safe singleton that holds a persistent psycopg2 connection.
@@ -33,20 +34,33 @@ class DataBase:
         if getattr(self, "_initialized", False):
             return
         self.env = ENV()
+
+        # Check if database environment variables are configured
+        if not all([self.env.DATABASE_HOST, self.env.DATABASE_USER, self.env.DATABASE_NAME]):
+            logger.warning(
+                "Database environment variables not fully configured. Skipping database connection.")
+            logger.warning(
+                "Please set DATABASE_HOST, DATABASE_USER, DATABASE_PASSWORD, and DATABASE_NAME in your .env file")
+            self.connection = None
+            self.cursor = None
+            self._initialized = True
+            return
+
         try:
             # keep connection open on the instance (don't use with)
             self.connection = psycopg2.connect(self.env.get_db_url())
-            self.cursor = self.connection.cursor()
+            # Use RealDictCursor to get results as dictionaries with proper column names
+            from psycopg2.extras import RealDictCursor
+            self.cursor = self.connection.cursor(cursor_factory=RealDictCursor)
             logger.info("Database connected successfully")
-            
-            
+
             # --- C2C SCHEMA START ---
-            
+
             # 0. ENUMS (Tạo trước bảng users để dùng cho cột type)
             # Lưu ý: Nếu enum đã tồn tại với giá trị 'BOTH', bạn cần drop và tạo lại trong DB thực tế
             # hoặc dùng ALTER TYPE. Ở đây là code khởi tạo cho môi trường mới.
             self.cursor.execute(
-        """
+                """
         DO $$ BEGIN 
             IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_type') THEN
                 CREATE TYPE user_type AS ENUM ('STUDENT', 'ORGANIZER');
@@ -62,7 +76,7 @@ class DataBase:
             )
             # USERS table
             self.cursor.execute(
-        """
+                """
         CREATE TABLE IF NOT EXISTS users (
             id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             email         text NOT NULL UNIQUE,
@@ -78,7 +92,7 @@ class DataBase:
             )
             # STUDENTS table
             self.cursor.execute(
-        """
+                """
         CREATE TABLE IF NOT EXISTS students (
             user_id           uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
             student_no        text NOT NULL UNIQUE,
@@ -88,7 +102,7 @@ class DataBase:
             )
             # ORGANIZERS table
             self.cursor.execute(
-        """
+                """
         CREATE TABLE IF NOT EXISTS organizers (
             user_id      uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
             organizer_no text NOT NULL UNIQUE,
@@ -96,10 +110,10 @@ class DataBase:
         );
         """
             )
-            
+
             # EVENTS table
             self.cursor.execute(
-        """
+                """
         CREATE TABLE IF NOT EXISTS events (
             id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             organizer_user_id  uuid NOT NULL REFERENCES organizers(user_id) ON DELETE RESTRICT,
@@ -115,7 +129,7 @@ class DataBase:
             )
             # EVENT_SLOTS table
             self.cursor.execute(
-        """
+                """
         CREATE TABLE IF NOT EXISTS event_slots (
             id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             event_id   uuid NOT NULL REFERENCES events(id) ON DELETE CASCADE,
@@ -134,7 +148,7 @@ class DataBase:
             )
             # APPLICATIONS table
             self.cursor.execute(
-        """
+                """
         CREATE TABLE IF NOT EXISTS applications (
             event_id         uuid NOT NULL REFERENCES events(id) ON DELETE CASCADE,
             student_user_id  uuid NOT NULL REFERENCES students(user_id) ON DELETE CASCADE,
@@ -154,7 +168,7 @@ class DataBase:
             )
             # STUDENT_SAVED_EVENTS (bookmark)
             self.cursor.execute(
-        """
+                """
         CREATE TABLE IF NOT EXISTS student_saved_events (
             student_user_id  uuid NOT NULL REFERENCES students(user_id) ON DELETE CASCADE,
             event_id         uuid NOT NULL REFERENCES events(id)        ON DELETE CASCADE,
@@ -165,7 +179,7 @@ class DataBase:
             )
             # NOTIFICATIONS
             self.cursor.execute(
-        """
+                """
         CREATE TABLE IF NOT EXISTS notifications (
             id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             type           text NOT NULL,
@@ -181,7 +195,7 @@ class DataBase:
             )
             # AUDIT_LOGS
             self.cursor.execute(
-        """
+                """
         CREATE TABLE IF NOT EXISTS audit_logs (
             id              bigserial PRIMARY KEY,
             actor_user_id   uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -197,7 +211,7 @@ class DataBase:
             )
             # CONSENTS
             self.cursor.execute(
-        """
+                """
         CREATE TABLE IF NOT EXISTS consents (
             user_id         uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
             email_marketing boolean NOT NULL DEFAULT false,
@@ -208,13 +222,11 @@ class DataBase:
             )
             logger.info("All tables ensured (c2c schema)")
             self.connection.commit()
-            
-            
+
         except Exception as e:
             # re-raise to make failures visible during startup
             raise
         self._initialized = True
-    
 
     async def execute_query(self, query: str):
         try:
@@ -225,7 +237,7 @@ class DataBase:
             logger.error(f"Error executing query: {e}")
             await self.connection.rollback()
             return None
-        
+
     async def fetch_one(self, query: str, params: tuple = ()):
         try:
             await self.cursor.execute(query, params)
@@ -235,15 +247,24 @@ class DataBase:
             return None
 
     # Synchronous helpers for blocking psycopg2 usage from sync endpoints
-    def execute_query_sync(self, query: str, params: tuple = ()): 
+    def execute_query_sync(self, query: str, params: tuple = ()):
+        """Execute a query and return all results. Creates a new cursor for thread safety."""
+        if not self.connection:
+            logger.error("Database connection not initialized")
+            return None
+
+        from psycopg2.extras import RealDictCursor
+        cursor = None
         try:
-            self.cursor.execute(query, params)
+            # Create a new cursor for this operation (thread-safe)
+            cursor = self.connection.cursor(cursor_factory=RealDictCursor)
+            cursor.execute(query, params)
             # try to fetch rows if any
-            if self.cursor.description:
-                cols = [d.name if hasattr(d, 'name') else d[0] for d in self.cursor.description]
-                rows = self.cursor.fetchall()
+            if cursor.description:
+                rows = cursor.fetchall()
                 self.connection.commit()
-                return [dict(zip(cols, r)) for r in rows]
+                # RealDictCursor returns dict-like objects, convert to regular dicts
+                return [dict(row) for row in rows]
             else:
                 self.connection.commit()
                 return []
@@ -254,14 +275,26 @@ class DataBase:
             except Exception:
                 pass
             return None
+        finally:
+            if cursor:
+                cursor.close()
 
-    def fetch_one_sync(self, query: str, params: tuple = ()): 
+    def fetch_one_sync(self, query: str, params: tuple = ()):
+        """Fetch a single row. Creates a new cursor for thread safety."""
+        if not self.connection:
+            logger.error("Database connection not initialized")
+            return None
+
+        from psycopg2.extras import RealDictCursor
+        cursor = None
         try:
-            self.cursor.execute(query, params)
-            row = self.cursor.fetchone()
-            if row and self.cursor.description:
-                cols = [d.name if hasattr(d, 'name') else d[0] for d in self.cursor.description]
-                return dict(zip(cols, row))
+            # Create a new cursor for this operation (thread-safe)
+            cursor = self.connection.cursor(cursor_factory=RealDictCursor)
+            cursor.execute(query, params)
+            row = cursor.fetchone()
+            # RealDictCursor already returns a dict-like object, convert to regular dict
+            if row:
+                return dict(row)
             return None
         except Exception as e:
             logger.error(f"Error fetching one sync: {e}")
@@ -270,5 +303,10 @@ class DataBase:
             except Exception:
                 pass
             return None
+        finally:
+            if cursor:
+                cursor.close()
+
+
 db = DataBase()
 logger.info("Database instance created")

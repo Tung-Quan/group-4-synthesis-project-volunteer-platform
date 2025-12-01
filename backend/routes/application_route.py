@@ -77,5 +77,11 @@ def get_participating_details(id: str, current_user: dict = Depends(get_current_
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return results
 
+@router.get("/{event_id}/{slot_id}", response_model=list[application_models.ApplicationResponse], status_code=status.HTTP_200_OK)
+def get_application_per_slot(event_id: str, slot_id: str):
+    results = application_controller.get_application_by_slotId(event_id, slot_id)
+    if not results:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return results
 
 

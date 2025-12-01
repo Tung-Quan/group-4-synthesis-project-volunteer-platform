@@ -111,13 +111,21 @@ export const AuthProvider = ({ children }) => {
     // }, []);
         const initializeAuth = async () => {
             try {
-                const csrfResponse = await apiClient.get('/auth/csrf');
-                const token = csrfResponse.data.csrf_token;
-                setCsrfToken(token);
-
                 const userResponse = await apiClient.get('/users/profile/me');
-                setUser(userResponse.data);
+                const userData = userResponse.data;
+                
+                setUser(userData);
                 setIsLoggedIn(true);
+
+                try {
+                    const csrfResponse = await apiClient.get('/auth/csrf');
+                    const newCsrfToken = csrfResponse.data.csrf_token;
+                    setCsrfToken(newCsrfToken);
+                } catch (csrfError) {
+                    console.error("Logged in, but failed to fetch CSRF token on reload:", csrfError);
+                    setUser(null);
+                    setIsLoggedIn(false);
+                }
 
             } catch (error) {
                 console.log("Initialization failed: User is not logged in.", error.response?.data);
@@ -132,20 +140,38 @@ export const AuthProvider = ({ children }) => {
         initializeAuth();
     }, []);
 
-    const login = (userData) => {
-        setUser(userData);
-        setIsLoggedIn(true);
+    const login = async (loginUserData, csrfToken) => {
+        try {
+            setCsrfToken(csrfToken);
+
+            const profileResponse = await apiClient.get('/users/profile/me');
+            const fullUserData = profileResponse.data;
+
+            setUser(fullUserData);
+            setIsLoggedIn(true);
+        } catch (error) {
+            console.error("Failed to fetch full profile after login, using basic info.", error);
+            setUser(loginUserData);
+            setIsLoggedIn(true);
+        }
     };
 
-    const logout = async () => {
+    const logout = async (navigate) => {
         try {
             await apiClient.post('/auth/logout');
+            console.log("Logout API call successful.");
         } catch (error) {
             console.error("Logout failed, but clearing client-side state anyway.", error);
         } finally {
             setUser(null);
             setIsLoggedIn(false);
             setCsrfToken(null);
+
+            if(navigate){
+                navigate('/guest');
+            } else {
+                window.location.href = '/guest';
+            }
         }
     };
 
