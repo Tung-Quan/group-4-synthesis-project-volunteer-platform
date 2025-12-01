@@ -57,8 +57,8 @@ def setup_middlewares(app: FastAPI):
     )
     logger.info("CORSMiddleware added.")
     # Add custom middlewares that rely on sessions or authentication
-    # app.add_middleware(CSRFMiddleware)
-    # logger.info("CSRFMiddleware added.")
+    app.add_middleware(CSRFMiddleware)
+    logger.info("CSRFMiddleware added.")
     # IMPORTANT: SessionMiddleware must be installed before any middleware that accesses
     # request.session at runtime. Because Starlette's add_middleware builds the stack
     # such that the last added middleware is executed first, we add SessionMiddleware

@@ -11,11 +11,12 @@ from jwt import PyJWTError
 
 router = APIRouter()
 
+
 @router.post(
     "/register",
     summary="Register a new account",
     description="Create a new account for Student or Organizer type.",
-    response_model=RegisterResponse, 
+    response_model=RegisterResponse,
     responses={
         400: {"description": "Missing information or Invalid Type"},
         409: {"description": "Email already registered"},
@@ -25,8 +26,10 @@ router = APIRouter()
 def register_user(request: RegisterRequest):
     result = auth_controller.register(request)
     if "error" in result:
-        raise HTTPException(status_code=result["status_code"], detail=result["error"])
+        raise HTTPException(
+            status_code=result["status_code"], detail=result["error"])
     return result
+
 
 @router.post(
     "/login",
@@ -41,10 +44,11 @@ def register_user(request: RegisterRequest):
         401: {"description": "Invalid email or password"}
     }
 )
-def login_user(request: LoginRequest, response: Response,request_obj: Request):
+def login_user(request: LoginRequest, response: Response, request_obj: Request):
     result = auth_controller.login(request)
     if "error" in result:
-        raise HTTPException(status_code=result["status_code"], detail=result["error"])
+        raise HTTPException(
+            status_code=result["status_code"], detail=result["error"])
     access_token = result.get("access_token")
     refresh_token = result.get("refresh_token")
     # csrf_token = result.get("csrf_token")
@@ -53,7 +57,7 @@ def login_user(request: LoginRequest, response: Response,request_obj: Request):
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=False, # Set to True in production with HTTPS
+            secure=False,  # Set to True in production with HTTPS
             samesite="lax",
             max_age=env_settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )
@@ -74,6 +78,7 @@ def login_user(request: LoginRequest, response: Response,request_obj: Request):
         "csrf_token": csrf_token
     }
 
+
 @router.post(
     "/logout",
     summary="Logout",
@@ -85,6 +90,7 @@ def logout_user(request: Request, response: Response, current_user: dict = Depen
     result = auth_controller.logout(request, response, current_user['id'])
     return result
 
+
 @router.get(
     "/csrf",
     summary="Get CSRF Token",
@@ -94,6 +100,7 @@ def logout_user(request: Request, response: Response, current_user: dict = Depen
 def get_csrf_token(request: Request, response: Response):
     csrf_token = auth_controller.regenerate_csrf_token(request.session)
     return {"csrf_token": csrf_token}
+
 
 @router.post(
     "/refresh",
@@ -112,7 +119,8 @@ def refresh_token(request: Request, response: Response):
     result = auth_controller.refresh(refresh_token)
 
     if "error" in result:
-        raise HTTPException(status_code=result["status_code"], detail=result["error"])
+        raise HTTPException(
+            status_code=result["status_code"], detail=result["error"])
 
     new_access_token = result["access_token"]
 

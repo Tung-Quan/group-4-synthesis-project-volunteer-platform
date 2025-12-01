@@ -2,6 +2,7 @@ from ..models.user_models import UpdateProfileRequest, UserProfileResponse
 from ..config.logger import logger
 from ..db.database import db
 
+
 def get_user_profile(user_id: str) -> dict:
     """
     Lấy thông tin profile chi tiết kèm thống kê dựa trên role.
@@ -13,11 +14,11 @@ def get_user_profile(user_id: str) -> dict:
     WHERE id = %s
     """
     user_row = db.fetch_one_sync(query_user, (user_id,))
-    
+
     if not user_row:
         return {"error": "User not found", "status_code": 404}
     user_type = user_row['type']
-    
+
     # 2. Phân nhánh logic (Chỉ còn STUDENT hoặc ORGANIZER)
     if user_type == 'STUDENT':
         query_joined = "SELECT COUNT(*) as count FROM applications WHERE student_user_id = %s AND status = 'attended'"
@@ -29,14 +30,15 @@ def get_user_profile(user_id: str) -> dict:
         # b. Lấy thông tin sinh viên (MSSV, ngày CTXH)
         query_student_info = "SELECT student_no, social_work_days FROM students WHERE user_id = %s"
         student_info = db.fetch_one_sync(query_student_info, (user_id,))
-        
-        total_days = float(student_info['social_work_days']) if student_info else 0.0
+
+        total_days = float(
+            student_info['social_work_days']) if student_info else 0.0
 
         # c. Đếm số đơn đang chờ (applied/pending)
         query_pending = """
             SELECT COUNT(*) as count 
             FROM applications 
-            WHERE student_user_id = %s AND status IN ('applied', 'pending')
+            WHERE student_user_id = %s AND status IN ('applied')
         """
         pending_res = db.fetch_one_sync(query_pending, (user_id,))
         pending_count = pending_res['count'] if pending_res else 0
@@ -74,9 +76,10 @@ def get_user_profile(user_id: str) -> dict:
                 "managed_events_count": event_count
             }
         }
-    
+
     # Nếu no roles or BOTH -> Trả về cơ bản
     return user_row
+
 
 def update_user_profile(user_id: str, request: UpdateProfileRequest) -> dict:
     """
@@ -95,7 +98,7 @@ def update_user_profile(user_id: str, request: UpdateProfileRequest) -> dict:
     # Nếu không có gì để update -> Báo lỗi nhẹ
     if not update_fields:
         return {"error": "No fields to update", "status_code": 400}
-    
+
     params.append(user_id)
 
     # Tạo câu lệnh SQL động
@@ -108,7 +111,7 @@ def update_user_profile(user_id: str, request: UpdateProfileRequest) -> dict:
     WHERE id = %s
     RETURNING id, email, full_name, phone, type, is_active, created_at, updated_at
     """
-    
+
     updated_user_row = db.execute_query_sync(query, tuple(params))
 
     if updated_user_row:

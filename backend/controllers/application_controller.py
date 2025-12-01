@@ -264,7 +264,7 @@ def get_history(student_user_id):
         JOIN events e ON e.id = a.event_id
         LEFT JOIN event_slots s ON s.id = a.slot_id
         WHERE a.student_user_id = %s
-        AND a.status IN ('attended', 'absent', 'rejected', 'withdrawn')
+        AND a.status IN ('attended')
         ORDER BY s.work_date DESC;
         """
     results = db.execute_query_sync(query, (student_user_id,))
