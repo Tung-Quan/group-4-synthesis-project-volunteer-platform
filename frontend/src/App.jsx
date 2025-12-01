@@ -330,7 +330,6 @@ import ActivityDashboard from './pages/ActivityDashboard';
 import ActivityDetailDashboard from './pages/ActivityDetailDashboard';
 import ApplicationReviewPage from './pages/ApplicationReviewPage';
 import ApplicationDetailPage from './pages/ApplicationDetailPage';
-import ActivityEditor from './pages/ActivityEditor';
 
 // Import Helpers
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -416,14 +415,6 @@ function App() {
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
               <ActivityDetailDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route 
-          path="organizer/dashboard/:activityId/edit"
-          element={
-            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
-              <ActivityEditor />
             </ProtectedRoute>
           }
         />
