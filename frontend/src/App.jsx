@@ -107,14 +107,6 @@ function App() {
           }
         />
         <Route 
-          path="organizer/dashboard/:activityId/edit"
-          element={
-            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
-              <ActivityEditor />
-            </ProtectedRoute>
-          }
-        />
-        <Route 
           path="organizer/applications" 
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
