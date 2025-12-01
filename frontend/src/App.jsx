@@ -17,6 +17,7 @@ import ActivityDashboard from './pages/ActivityDashboard';
 import ActivityDetailDashboard from './pages/ActivityDetailDashboard';
 import ApplicationReviewPage from './pages/ApplicationReviewPage';
 import ApplicationDetailPage from './pages/ApplicationDetailPage';
+import CreateNewActivityPage from './pages/CreateNewActivityPage';
 
 // Import Helpers
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -86,6 +87,14 @@ function App() {
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
               <ActivityDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="organizer/activities/new" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
+              <CreateNewActivityPage />
             </ProtectedRoute>
           } 
         />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
@@ -20,23 +20,73 @@ function ActivityDetailPage() {
   // TODO: Cần một API để lấy trạng thái đăng ký của user cho hoạt động này
   const userApplicationStatus = null; // Tạm thời để là null
 
-  useEffect(() => {
-    const fetchActivityDetail = async () => {
-      if (!activityId) return;
-      try {
-        setIsLoading(true);
-        setError(null);
-        const response = await apiClient.get(`/events/${activityId}`);
-        setActivity(response.data);
-      } catch (err) {
-        setError("Không thể tải thông tin hoạt động này.");
-        console.error(`Error fetching activity ${activityId}:`, err);
-      } finally {
-        setIsLoading(false);
+  const fetchActivityData = useCallback(async () => {
+    if (!activityId) return;
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // ======================================================
+      // === BƯỚC 1: LẤY THÔNG TIN SỰ KIỆN CƠ BẢN ===
+      // ======================================================
+      const eventResponse = await apiClient.get(`/events/${activityId}`);
+      const basicEventData = eventResponse.data;
+
+      if (!basicEventData.slots || basicEventData.slots.length === 0) {
+        // Nếu không có slot, không cần làm gì thêm
+        setActivity(basicEventData);
+        return;
       }
-    };
-    fetchActivityDetail();
-  }, [activityId]);
+
+      // ====================================================================
+      // === BƯỚC 2: GỌI API CHI TIẾT CHO TỪNG SLOT ĐỂ LẤY SỐ LƯỢNG ĐĂNG KÝ ===
+      // ====================================================================
+      const slotDetailPromises = basicEventData.slots.map(slot =>
+        apiClient.get(`/events/slots/${slot.slot_id}`)
+      );
+      
+      // Chờ tất cả các request lấy chi tiết slot hoàn thành
+      const slotDetailResponses = await Promise.all(slotDetailPromises);
+      
+      // Trích xuất dữ liệu từ các response
+      const slotsWithDetails = slotDetailResponses.map(res => res.data);
+
+      // ======================================================
+      // === BƯỚC 3: HỢP NHẤT DỮ LIỆU ===
+      // ======================================================
+      // Tạo một map để dễ dàng truy cập chi tiết slot bằng slot_id
+      const slotDetailsMap = new Map(slotsWithDetails.map(slot => [slot.id, slot]));
+      
+      // Cập nhật lại mảng slots trong dữ liệu sự kiện ban đầu
+      const enrichedSlots = basicEventData.slots.map(basicSlot => {
+        const details = slotDetailsMap.get(basicSlot.slot_id);
+        return {
+          ...basicSlot,
+          // Lấy approved_count và applied_count từ dữ liệu chi tiết
+          approved_count: details ? details.approved_count : 0,
+          applied_count: details ? details.applied_count : 0,
+        };
+      });
+
+      // Tạo object activity cuối cùng đã được "làm giàu"
+      const enrichedEventData = {
+        ...basicEventData,
+        slots: enrichedSlots,
+      };
+      
+      setActivity(enrichedEventData);
+
+    } catch (err) {
+      setError("Không thể tải thông tin hoạt động này.");
+      console.error(`Error fetching activity data for ${activityId}:`, err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activityId]); // Dependency là activityId
+
+  useEffect(() => {
+    fetchActivityData();
+  }, [fetchActivityData]);
 
   const handleRegisterShift = async (slotId, note) => {
     try {
@@ -47,6 +97,7 @@ function ActivityDetailPage() {
       });
       alert(`Đăng ký thành công ca làm việc!`);
       setIsModalOpen(false);
+      fetchActivityData();
     } catch (err) {
       alert(`Đăng ký thất bại: ${err.response?.data?.detail || 'Có lỗi xảy ra.'}`);
     }
@@ -70,8 +121,8 @@ function ActivityDetailPage() {
     time: `${slot.starts_at.substring(0, 5)} - ${slot.ends_at.substring(0, 5)} ngày ${new Date(slot.work_date).toLocaleDateString('vi-VN')}`,
     location: activity.location,
     capacity: slot.capacity,
-    // TODO: API cần trả về số lượng đã đăng ký cho từng slot
-    registered: slot.approved_count || 0, // Giả sử API trả về `approved_count`
+    work_date: slot.work_date,
+    registered: (slot.approved_count || 0) + (slot.applied_count || 0),
   }));
 
   return (
