@@ -80,7 +80,7 @@ function NewActivitiesPage() {
   return (
     <>
       <div className="mb-4">
-        <button onClick={() => navigate(-1)} className="...">Quay về</button>
+        <button onClick={() => navigate(-1)} className="text-blue-500"> &lt; Quay về</button>
       </div>
 
       <h1 className="text-3xl font-serif font-bold text-center text-gray-800 my-6">
@@ -99,7 +99,7 @@ function NewActivitiesPage() {
                   year: 'numeric',
                 });
               } catch (e) {
-                console.error("Invalid date format from API:", activityFromApi.event_start_time);
+                console.error("Invalid date format from API:", activityFromApi.event_start_time,"Exceptions:" ,e);
               }
             }
 

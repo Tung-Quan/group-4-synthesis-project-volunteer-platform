@@ -33,10 +33,22 @@ class DataBase:
         if getattr(self, "_initialized", False):
             return
         self.env = ENV()
+        
+        # Check if database environment variables are configured
+        if not all([self.env.DATABASE_HOST, self.env.DATABASE_USER, self.env.DATABASE_NAME]):
+            logger.warning("Database environment variables not fully configured. Skipping database connection.")
+            logger.warning("Please set DATABASE_HOST, DATABASE_USER, DATABASE_PASSWORD, and DATABASE_NAME in your .env file")
+            self.connection = None
+            self.cursor = None
+            self._initialized = True
+            return
+            
         try:
             # keep connection open on the instance (don't use with)
             self.connection = psycopg2.connect(self.env.get_db_url())
-            self.cursor = self.connection.cursor()
+            # Use RealDictCursor to get results as dictionaries with proper column names
+            from psycopg2.extras import RealDictCursor
+            self.cursor = self.connection.cursor(cursor_factory=RealDictCursor)
             logger.info("Database connected successfully")
             
             
@@ -236,14 +248,23 @@ class DataBase:
 
     # Synchronous helpers for blocking psycopg2 usage from sync endpoints
     def execute_query_sync(self, query: str, params: tuple = ()): 
+        """Execute a query and return all results. Creates a new cursor for thread safety."""
+        if not self.connection:
+            logger.error("Database connection not initialized")
+            return None
+        
+        from psycopg2.extras import RealDictCursor
+        cursor = None
         try:
-            self.cursor.execute(query, params)
+            # Create a new cursor for this operation (thread-safe)
+            cursor = self.connection.cursor(cursor_factory=RealDictCursor)
+            cursor.execute(query, params)
             # try to fetch rows if any
-            if self.cursor.description:
-                cols = [d.name if hasattr(d, 'name') else d[0] for d in self.cursor.description]
-                rows = self.cursor.fetchall()
+            if cursor.description:
+                rows = cursor.fetchall()
                 self.connection.commit()
-                return [dict(zip(cols, r)) for r in rows]
+                # RealDictCursor returns dict-like objects, convert to regular dicts
+                return [dict(row) for row in rows]
             else:
                 self.connection.commit()
                 return []
@@ -254,14 +275,26 @@ class DataBase:
             except Exception:
                 pass
             return None
+        finally:
+            if cursor:
+                cursor.close()
 
     def fetch_one_sync(self, query: str, params: tuple = ()): 
+        """Fetch a single row. Creates a new cursor for thread safety."""
+        if not self.connection:
+            logger.error("Database connection not initialized")
+            return None
+        
+        from psycopg2.extras import RealDictCursor
+        cursor = None
         try:
-            self.cursor.execute(query, params)
-            row = self.cursor.fetchone()
-            if row and self.cursor.description:
-                cols = [d.name if hasattr(d, 'name') else d[0] for d in self.cursor.description]
-                return dict(zip(cols, row))
+            # Create a new cursor for this operation (thread-safe)
+            cursor = self.connection.cursor(cursor_factory=RealDictCursor)
+            cursor.execute(query, params)
+            row = cursor.fetchone()
+            # RealDictCursor already returns a dict-like object, convert to regular dict
+            if row:
+                return dict(row)
             return None
         except Exception as e:
             logger.error(f"Error fetching one sync: {e}")
@@ -270,5 +303,8 @@ class DataBase:
             except Exception:
                 pass
             return None
+        finally:
+            if cursor:
+                cursor.close()
 db = DataBase()
 logger.info("Database instance created")

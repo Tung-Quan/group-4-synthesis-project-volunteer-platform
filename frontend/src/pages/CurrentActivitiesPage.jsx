@@ -102,7 +102,7 @@ function CurrentActivitiesPage() {
                 formattedDate = new Date(activityFromApi.event_start_time).toLocaleDateString('vi-VN', {
                   day: '2-digit', month: '2-digit', year: 'numeric'
                 });
-              } catch (e) { 
+              } catch{
                 console.error("Invalid date format from API:", activityFromApi.event_start_time);
             }
 

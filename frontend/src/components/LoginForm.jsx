@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; 
 import apiClient from '../api/apiClient';
 
+
 function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,6 +31,8 @@ function LoginForm() {
       const from = location.state?.from?.pathname || '/';
       navigate(from, { replace: true });
 
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('csrf_token', csrf_token);
     } catch (err) {
       const errorMessage = err.response?.data?.detail || 'Email hoặc mật khẩu không đúng.';
       setError(errorMessage);

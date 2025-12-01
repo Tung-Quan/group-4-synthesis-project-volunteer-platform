@@ -17,7 +17,10 @@ def get_user_profile(user_id: str) -> dict:
 
     if not user_row:
         return {"error": "User not found", "status_code": 404}
-    user_type = user_row['type']
+    user_type = user_row.get('type')
+    if not user_type:
+        logger.error(f"Missing 'type' field in user_row. Available keys: {list(user_row.keys())}")
+        return {"error": "User type not found", "status_code": 500}
 
     # 2. Phân nhánh logic (Chỉ còn STUDENT hoặc ORGANIZER)
     if user_type == 'STUDENT':
