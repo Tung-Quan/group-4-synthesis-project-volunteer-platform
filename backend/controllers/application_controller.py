@@ -47,7 +47,7 @@ def apply_event(request, student_user_id):
     slot_query = """
         SELECT capacity
         FROM event_slots
-        WHERE id = %s AND event_id = %s;
+        WHERE id = %s AND event_id = %s AND status = 'approved';
     """
     slot = db.fetch_one_sync(slot_query, (request.slot_id, request.event_id))
     if not slot:
