@@ -377,3 +377,48 @@ class TestEvents:
         # 2. Xóa slot
         res_del = client.delete(f"/events/slots/{slot_id}", headers=headers)
         assert res_del.status_code == 200
+
+    # ==================== FILTER & OWN TESTS (BỔ SUNG) ====================
+
+    def test_get_upcoming_events(self, organizer_auth):
+        """✓ Get upcoming events"""
+        org_client, org_headers, _ = organizer_auth
+        # Tạo event tương lai
+        org_client.post("/events/", json={
+            "title": "Future Event", "description": "...", "location": "...",
+            "slots": [{"work_date": str(date.today() + timedelta(days=10)), "starts_at": "08:00:00", "ends_at": "12:00:00", "capacity": 5, "day_reward": 1}]
+        }, headers=org_headers)
+
+        res = org_client.get("/events/upcoming")
+        assert res.status_code == 200
+        assert isinstance(res.json(), list)
+        # Check logic: phải có ít nhất 1 event vừa tạo
+        assert any(e["title"] == "Future Event" for e in res.json())
+
+    def test_get_own_events(self, organizer_auth):
+        """✓ Organizer gets their own events"""
+        org_client, org_headers, org_id = organizer_auth
+        org_client.post("/events/", json={
+            "title": "My Event", "description": "...", "location": "...",
+            "slots": [{"work_date": str(date.today()), "starts_at": "08:00:00", "ends_at": "12:00:00", "capacity": 5, "day_reward": 1}]
+        }, headers=org_headers)
+
+        res = org_client.get("/events/get-own-event", headers=org_headers)
+        assert res.status_code == 200
+        assert len(res.json()) >= 1
+        assert res.json()[0]["organizer_user_id"] == org_id
+
+    def test_get_slot_detail(self, organizer_auth):
+        """✓ User gets slot detail"""
+        org_client, org_headers, _ = organizer_auth
+        # Tạo event
+        create_res = org_client.post("/events/", json={
+            "title": "Slot Detail Test", "description": "...", "location": "...",
+            "slots": [{"work_date": str(date.today()), "starts_at": "08:00:00", "ends_at": "12:00:00", "capacity": 5, "day_reward": 1}]
+        }, headers=org_headers)
+        slot_id = create_res.json()["slot_ids"][0]
+
+        # Xem chi tiết slot
+        res = org_client.get(f"/events/slots/{slot_id}")
+        assert res.status_code == 200
+        assert res.json()["capacity"] == 5

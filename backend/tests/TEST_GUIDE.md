@@ -2,7 +2,7 @@
 
 ## Overview
 
-The test suite has been expanded from **4 basic tests** to **60+ comprehensive tests** organized into 4 test files. Each test includes:
+The test suite has been expanded from **4 basic tests** to **70+ comprehensive tests** organized into 4 test files. Each test includes:
 - ✓ Clear test purpose (marked with ✓ for success, ✗ for failure)
 - ✓ Test name describing the scenario
 - ✓ Assertions validating expected behavior
@@ -14,9 +14,9 @@ The test suite has been expanded from **4 basic tests** to **60+ comprehensive t
 
 ```
 tests/
-├── test_auth.py              # 19 auth tests
-├── test_events.py            # 20 event tests
-├── test_applications.py      # 18 application tests
+├── test_auth.py              # 21 auth tests
+├── test_events.py            # 23 event tests
+├── test_applications.py      # 20 application tests
 ├── test_users.py             # 19 user tests
 ├── conftest.py               # Fixtures & setup
 └── TEST_GUIDE.md             # This file
@@ -63,7 +63,7 @@ pytest backend/tests/ -v -s
 
 ## Test Categories
 
-### 1. Authentication Tests (`test_auth.py`) - 19 tests
+### 1. Authentication Tests (`test_auth.py`) - 21 tests
 
 #### Registration Tests (9)
 - ✓ `test_register_student_success` - Valid student registration
@@ -92,7 +92,11 @@ pytest backend/tests/ -v -s
 - ✓ `test_logout_success` - Logout succeeds for authenticated user
 - ✗ `test_logout_unauthorized` - Logout fails for unauthenticated user
 
-### 2. Event Tests (`test_events.py`) - 20 tests
+#### Refresh Tests (2)
+- ✓ `test_refresh_token_success` - Refresh access token using refresh cookie
+- ✗ `test_refresh_token_missing` - Refresh fails without cookie
+
+### 2. Event Tests (`test_events.py`) - 23 tests
 
 #### Read Tests (2)
 - ✓ `test_get_all_events` - Get all events list
@@ -126,7 +130,12 @@ pytest backend/tests/ -v -s
 - ✓ `test_update_slot` - Organizer updates a slot
 - ✓ `test_delete_slot` - Organizer deletes a slot
 
-### 3. Application Tests (`test_applications.py`) - 18 tests
+#### FILTER & OWN TESTS (3)
+- ✓ `test_get_upcoming_events` - Get upcoming events
+- ✓ `test_get_own_events` - Organizer gets their own events
+- ✓ `test_get_slot_detail` - User gets slot detail
+
+### 3. Application Tests (`test_applications.py`) - 20 tests
 
 #### Full Workflow Tests (2)
 - ✓ `test_full_application_flow` - Complete: create → apply → review → attend
@@ -152,9 +161,11 @@ pytest backend/tests/ -v -s
 - ✓ `test_mark_attendance_absent` - Mark as absent
 - ✗ `test_attendance_student_cannot_mark` - Student cannot mark (403)
 
-#### CANCEL & HISTORY TESTS (2)
+#### User Lists & Details (4)
 - ✓ `test_student_cancel_application` - Student cancels their application
 - ✓ `test_get_history_and_participating` - Get history and participating lists
+- ✓ `test_get_history_details` - Get details of a specific history item
+- ✓ `test_organizer_get_applications_per_slot` - Organizer views applicants for a slot
 
 ### 4. User Profile Tests (`test_users.py`) - 19 tests
 
