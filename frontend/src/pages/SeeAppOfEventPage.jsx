@@ -35,8 +35,23 @@ function SeeAppOfEventPage() {
   	if (isLoading) return <div className="text-center p-4">Đang tải...</div>;
 	if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
 
-	const slots = activity.slots;
+	function compareTime(slot1, slot2) {
+		//we abusing strings with this one
+		let date1 = new Date(slot1.work_date + 'T' + slot1.starts_at);
+		let date2 = new Date(slot2.work_date + 'T' + slot2.starts_at);
 
+		if (date1 < date2) {
+			return -1;
+		}
+		else if (date2 > date1) {
+			return 1;
+		}
+		else {
+			return 0;
+		}
+	}
+	const slots = activity.slots.sort(compareTime);
+	
   	return (
 		<>
 		<div className="mb-4">
@@ -50,15 +65,15 @@ function SeeAppOfEventPage() {
         </div>
 
 		<h1 className="text-3xl font-serif font-bold text-center text-gray-800 my-6">
-          DANH SÁCH CÁC CA CỦA HOẠT ĐỘNG: {activity.title}
+          DANH SÁCH CA CỦA HOẠT ĐỘNG: {activity.title}
         </h1>
 
 		{/*an event must have at least 1 slot but this check is for safeguard */}
 		<div className="bg-white p-6 rounded-lg shadow-md">
 			{slots.length > 0 ? (
-			slots.map(s => <EventSlot key={s.slot_id} slot={s} />)
+			slots.map(slot => <EventSlot key={slot.slot_id} slot={slot}/>)
 			) : (
-			<p className="text-center text-gray-500">Lỗi: Hoạt động này không có ca nào.</p>
+			<p className="text-center text-gray-500">Hoạt động này không có ca nào.</p>
 			)}
         </div>
 		</>

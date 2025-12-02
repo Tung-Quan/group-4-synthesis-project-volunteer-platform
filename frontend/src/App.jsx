@@ -18,6 +18,7 @@ import ActivityDetailDashboard from './pages/ActivityDetailDashboard';
 import ApplicationReviewPage from './pages/ApplicationReviewPage';
 import SeeAppOfEventPage from './pages/SeeAppOfEventPage';
 import CreateNewActivityPage from './pages/CreateNewActivityPage';
+import SeeAppInSlotPage from './pages/SeeAppInSlotPage';
 
 // Import Helpers
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -119,6 +120,14 @@ function App() {
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
               <SeeAppOfEventPage user={user} />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="organizer/applications/:activityId/:slotId" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
+              <SeeAppInSlotPage user={user} />
             </ProtectedRoute>
           } 
         />
