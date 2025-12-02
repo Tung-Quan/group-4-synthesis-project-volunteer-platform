@@ -2,7 +2,7 @@ import pytest
 from backend.tests.conftest import get_random_email
 
 class TestAuth:
-    """Auth endpoint tests with comprehensive coverage and data cleanup"""
+    """Auth endpoint tests with comprehensive coverage"""
 
     # ==================== REGISTRATION TESTS ====================
     
@@ -18,7 +18,6 @@ class TestAuth:
         res = client.post("/auth/register", json=payload)
         assert res.status_code == 200
         assert res.json()["email"] == payload["email"]
-        # ✓ Data cleanup: user created with random email
 
     def test_register_organizer_success(self, client):
         """✓ Organizer registration with valid data"""
@@ -33,7 +32,6 @@ class TestAuth:
         res = client.post("/auth/register", json=payload)
         assert res.status_code == 200
         assert res.json()["type"] == "ORGANIZER"
-        # ✓ Data cleanup: organizer created
 
     def test_register_missing_field(self, client):
         """✗ Registration fails without required student_no"""
@@ -141,7 +139,6 @@ class TestAuth:
         
         assert res.status_code == 200
         assert "csrf_token" in res.json()
-        # ✓ Data cleanup: user created and logged in
 
     def test_login_fail_wrong_password(self, client, csrf_headers):
         """✗ Login fails with wrong password"""
@@ -242,7 +239,6 @@ class TestAuth:
         res = client.post("/auth/refresh", headers=csrf_headers)
         assert res.status_code == 200
         assert "Access token refreshed" in res.json()["message"]
-        # ✓ Data cleanup: token refreshed
 
     def test_refresh_token_missing(self, client):
         """✗ Refresh fails without cookie"""

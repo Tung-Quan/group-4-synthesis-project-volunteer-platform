@@ -2,7 +2,7 @@ import pytest
 from datetime import date, timedelta
 
 class TestApplicationWorkflow:
-    """Application workflow tests with comprehensive coverage and data cleanup"""
+    """Application workflow tests with comprehensive coverage"""
 
     # ==================== FULL WORKFLOW TESTS ====================
 
@@ -52,7 +52,6 @@ class TestApplicationWorkflow:
         stats = res_profile.json()["stats"]
         assert stats["activities_joined"] >= 1
         assert stats["total_social_work_days"] >= 2.0
-        # ✓ Cleanup: Full workflow completed and verified
 
     def test_full_flow_with_rejection(self, organizer_auth, student_auth):
         """✓ Complete workflow: create → apply → reject"""
@@ -87,7 +86,6 @@ class TestApplicationWorkflow:
         res_profile = stu_client.get("/users/profile/me", headers=stu_headers)
         stats = res_profile.json()["stats"]
         assert stats["activities_joined"] == 0  # Should still be 0
-        # ✓ Cleanup: Rejection flow completed
 
     # ==================== APPLICATION TESTS ====================
 
@@ -115,7 +113,6 @@ class TestApplicationWorkflow:
         }, headers=stu_headers)
         
         assert res_apply.status_code == 200
-        # ✓ Cleanup: Event and application created
 
     def test_apply_missing_event_id(self, student_auth):
         """✗ Apply fails without event_id"""
@@ -126,7 +123,6 @@ class TestApplicationWorkflow:
         }, headers=stu_headers)
         
         assert res.status_code == 422
-        # ✓ Cleanup: Invalid request
 
     def test_apply_missing_slot_id(self, student_auth):
         """✗ Apply fails without slot_id"""
@@ -137,8 +133,6 @@ class TestApplicationWorkflow:
         }, headers=stu_headers)
         
         assert res.status_code == 422
-        # ✓ Cleanup: Invalid request
-
     def test_apply_nonexistent_event(self, student_auth):
         """✗ Apply to non-existent event fails"""
         stu_client, stu_headers, _ = student_auth
@@ -150,7 +144,6 @@ class TestApplicationWorkflow:
         }, headers=stu_headers)
         
         assert res.status_code in [404, 400]
-        # ✓ Cleanup: Event doesn't exist, no application created
 
     def test_apply_to_full_slot(self, organizer_auth, student_auth):
         """✓ Verify behavior with full slot"""
@@ -176,7 +169,6 @@ class TestApplicationWorkflow:
         }, headers=stu_headers)
         
         assert res_apply.status_code == 200
-        # ✓ Cleanup: Full slot event created and application processed
 
     def test_apply_without_auth(self, client):
         """✗ Apply without authentication fails"""
@@ -185,7 +177,6 @@ class TestApplicationWorkflow:
         })
         
         assert res.status_code in [401, 403]
-        # ✓ Cleanup: Unauthenticated request
 
     def test_apply_with_long_note(self, organizer_auth, student_auth):
         """✓ Apply with very long note"""
@@ -210,7 +201,6 @@ class TestApplicationWorkflow:
         }, headers=stu_headers)
         
         assert res_apply.status_code in [200, 400]
-        # ✓ Cleanup: Long note handled
 
     def test_apply_empty_note(self, organizer_auth, student_auth):
         """✓ Apply with empty note"""
@@ -234,7 +224,6 @@ class TestApplicationWorkflow:
         }, headers=stu_headers)
         
         assert res_apply.status_code in [200, 400]
-        # ✓ Cleanup: Empty note handled
 
     # ==================== REVIEW TESTS ====================
 
@@ -266,7 +255,6 @@ class TestApplicationWorkflow:
         }, headers=org_headers)
         
         assert res_review.status_code == 200
-        # ✓ Cleanup: Application reviewed
 
     def test_review_reject(self, organizer_auth, student_auth):
         """✓ Organizer rejects application"""
@@ -296,7 +284,6 @@ class TestApplicationWorkflow:
         }, headers=org_headers)
         
         assert res_review.status_code == 200
-        # ✓ Cleanup: Application rejected
 
     def test_review_student_cannot_review(self, organizer_auth, student_auth):
         """✗ Student cannot review applications"""
@@ -321,7 +308,6 @@ class TestApplicationWorkflow:
         }, headers=stu_headers)
         
         assert res_review.status_code == 403
-        # ✓ Cleanup: Permission denied
 
     # ==================== ATTENDANCE TESTS ====================
 
@@ -357,7 +343,6 @@ class TestApplicationWorkflow:
         }, headers=org_headers)
         
         assert res_attend.status_code == 200
-        # ✓ Cleanup: Attendance marked
 
     def test_mark_attendance_absent(self, organizer_auth, student_auth):
         """✓ Mark student as absent"""
@@ -391,7 +376,6 @@ class TestApplicationWorkflow:
         }, headers=org_headers)
         
         assert res_attend.status_code == 200
-        # ✓ Cleanup: Absence marked
 
     def test_attendance_student_cannot_mark(self, student_auth):
         """✗ Student cannot mark attendance"""
@@ -402,7 +386,6 @@ class TestApplicationWorkflow:
         }, headers=stu_headers)
         
         assert res.status_code == 403
-        # ✓ Cleanup: Permission denied
 
     # ==================== CANCEL & HISTORY TESTS (BỔ SUNG) ====================
 

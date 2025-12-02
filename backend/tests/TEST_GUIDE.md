@@ -6,7 +6,6 @@ The test suite has been expanded from **4 basic tests** to **70+ comprehensive t
 - ✓ Clear test purpose (marked with ✓ for success, ✗ for failure)
 - ✓ Test name describing the scenario
 - ✓ Assertions validating expected behavior
-- ✓ Data cleanup comments (what data is created/cleaned)
 
 ---
 
@@ -198,50 +197,6 @@ pytest backend/tests/ -v -s
 
 ---
 
-## Data Cleanup Strategy
-
-Each test includes a **cleanup comment** indicating what data is created:
-
-```python
-def test_example(client):
-    res = client.post("/auth/register", json=payload)
-    assert res.status_code == 200
-    # ✓ Cleanup: User created with random email, auto-cleaned
-```
-
-### Cleanup Patterns
-
-1. **Random Email** - Each test uses `get_random_email()` to create unique users
-   ```python
-   # ✓ Cleanup: User created with random email (auto-unique)
-   ```
-
-2. **Fixtures Handle Cleanup** - Auth fixtures create fresh clients per test
-   ```python
-   # ✓ Cleanup: Read-only operation
-   # ✓ Cleanup: Permission denied, no data created
-   ```
-
-3. **Failed Requests** - Invalid requests don't create data
-   ```python
-   # ✓ Cleanup: Validation failed, no event created
-   ```
-
-4. **Transaction Rollback** - Database handles cleanup per test session
-
-### Manual Cleanup (if needed)
-
-Use fixtures from `conftest.py`:
-
-```python
-from backend.tests.conftest import get_random_email
-
-# Each test creates unique data
-email = get_random_email("prefix")  # Returns: prefix_12345@test.com
-```
-
----
-
 ## Test Naming Convention
 
 ### Pattern
@@ -296,7 +251,7 @@ def test_register_student_success(self, client):
     res = client.post("/auth/register", json=payload)
     assert res.status_code == 200
     assert res.json()["email"] == payload["email"]
-    # ✓ Cleanup: User created with random email
+    # User created with random email
 ```
 
 ### Pattern 2: With Authentication
@@ -308,7 +263,7 @@ def test_create_event_organizer(self, organizer_auth):
     payload = {...}
     res = auth_client.post("/events/", json=payload, headers=headers)
     assert res.status_code == 201
-    # ✓ Cleanup: Event created with random organizer
+    # Event created with random organizer
 ```
 
 ### Pattern 3: Error Scenario
@@ -322,7 +277,7 @@ def test_apply_missing_event_id(self, student_auth):
     }, headers=stu_headers)
     
     assert res.status_code == 422
-    # ✓ Cleanup: Invalid request, no application created
+    # Invalid request, no application created
 ```
 
 ### Pattern 4: Full Workflow
@@ -336,7 +291,7 @@ def test_full_application_flow(self, organizer_auth, student_auth):
     # Step 2: Apply
     # Step 3: Review
     # Step 4: Attend
-    # ✓ Cleanup: Full workflow completed
+    # Full workflow completed
 ```
 
 ---
@@ -411,8 +366,7 @@ Open `htmlcov/index.html` to view coverage details.
 
 1. Follow naming convention: `test_<feature>_<scenario>`
 2. Add docstring with ✓/✗ indicator
-3. Include cleanup comment: `# ✓ Cleanup: ...`
-4. Use fixtures for auth:
+3. Use fixtures for auth:
    ```python
    def test_new_feature(self, organizer_auth, student_auth):
        org_client, org_headers, _ = organizer_auth
@@ -421,7 +375,6 @@ Open `htmlcov/index.html` to view coverage details.
 
 ### Updating Tests
 
-- Keep cleanup comments updated
 - Maintain status code expectations
 - Update assertions if API changes
 - Keep test names descriptive
@@ -461,7 +414,6 @@ student_auth
 
 - **60+ comprehensive tests** across 4 test files
 - **Clear test purposes** with ✓/✗ indicators
-- **Data cleanup tracked** in comments
 - **Organized by functionality** (auth, events, applications, users)
 - **Error scenarios covered** for validation and security
 - **Easy to maintain** with consistent naming and structure

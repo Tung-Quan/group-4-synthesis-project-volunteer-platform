@@ -2,7 +2,7 @@ import pytest
 from datetime import date, timedelta
 
 class TestEvents:
-    """Event management tests with comprehensive coverage and data cleanup"""
+    """Event management tests with comprehensive coverage"""
 
     # ==================== READ TESTS ====================
 
@@ -11,7 +11,6 @@ class TestEvents:
         res = client.get("/events/get-all-event")
         assert res.status_code == 200
         assert isinstance(res.json(), list)
-        # ✓ Cleanup: Read-only operation
 
     def test_get_all_events_empty(self, client):
         """✓ Get all events returns empty list when no events"""
@@ -20,7 +19,6 @@ class TestEvents:
         result = res.json()
         # Result could be empty list or populated
         assert isinstance(result, list)
-        # ✓ Cleanup: Read-only operation
 
     # ==================== CREATE TESTS ====================
 
@@ -46,7 +44,6 @@ class TestEvents:
         assert res.status_code == 201
         assert "event_id" in res.json()
         assert "slot_ids" in res.json()
-        # ✓ Cleanup: Event created with random organizer
 
     def test_create_event_multiple_slots(self, organizer_auth):
         """✓ Organizer can create event with multiple slots"""
@@ -76,7 +73,6 @@ class TestEvents:
         res = auth_client.post("/events/", json=payload, headers=headers)
         assert res.status_code == 201
         assert len(res.json()["slot_ids"]) == 2
-        # ✓ Cleanup: Event created with 2 slots
 
     def test_create_event_large_capacity(self, organizer_auth):
         """✓ Organizer can create event with large capacity"""
@@ -98,7 +94,6 @@ class TestEvents:
         }
         res = auth_client.post("/events/", json=payload, headers=headers)
         assert res.status_code == 201
-        # ✓ Cleanup: Large event created
 
     def test_create_event_with_special_chars(self, organizer_auth):
         """✓ Event title with special characters"""
@@ -120,7 +115,6 @@ class TestEvents:
         }
         res = auth_client.post("/events/", json=payload, headers=headers)
         assert res.status_code == 201
-        # ✓ Cleanup: Special char event created
 
     def test_create_event_student_forbidden(self, student_auth):
         """✗ Student cannot create events"""
@@ -130,7 +124,6 @@ class TestEvents:
         }
         res = auth_client.post("/events/", json=payload, headers=headers)
         assert res.status_code == 403
-        # ✓ Cleanup: Permission denied, no event created
 
     def test_create_event_unauthenticated(self, client):
         """✗ Unauthenticated user cannot create events"""
@@ -139,7 +132,6 @@ class TestEvents:
         }
         res = client.post("/events/", json=payload)
         assert res.status_code in [401, 403]
-        # ✓ Cleanup: Not authenticated, no event created
 
     def test_create_event_missing_title(self, organizer_auth):
         """✗ Event creation fails without title"""
@@ -152,7 +144,6 @@ class TestEvents:
         }
         res = auth_client.post("/events/", json=payload, headers=headers)
         assert res.status_code == 422
-        # ✓ Cleanup: Validation failed, no event created
 
     def test_create_event_missing_location(self, organizer_auth):
         """✗ Event creation fails without location"""
@@ -165,7 +156,6 @@ class TestEvents:
         }
         res = auth_client.post("/events/", json=payload, headers=headers)
         assert res.status_code == 422
-        # ✓ Cleanup: Validation failed
 
     def test_create_event_no_slots(self, organizer_auth):
         """✗ Event creation fails without slots (if required)"""
@@ -180,7 +170,6 @@ class TestEvents:
         res = auth_client.post("/events/", json=payload, headers=headers)
         # Could be 201 (valid) or 400 (requires slots)
         assert res.status_code in [201, 400]
-        # ✓ Cleanup: Event may or may not be created
 
     def test_create_event_invalid_time_range(self, organizer_auth):
         """✗ Event creation fails with end_time before start_time"""
@@ -202,7 +191,6 @@ class TestEvents:
         }
         res = auth_client.post("/events/", json=payload, headers=headers)
         assert res.status_code in [400, 422]
-        # ✓ Cleanup: Validation failed, no event created
 
     def test_create_event_zero_capacity(self, organizer_auth):
         """✗ Event creation fails with zero capacity"""
@@ -224,7 +212,6 @@ class TestEvents:
         }
         res = auth_client.post("/events/", json=payload, headers=headers)
         assert res.status_code in [400, 422]
-        # ✓ Cleanup: Validation failed, no event created
 
     def test_create_event_negative_capacity(self, organizer_auth):
         """✗ Event creation fails with negative capacity"""
@@ -246,7 +233,6 @@ class TestEvents:
         }
         res = auth_client.post("/events/", json=payload, headers=headers)
         assert res.status_code in [400, 422]
-        # ✓ Cleanup: Validation failed, no event created
 
     def test_create_event_negative_reward(self, organizer_auth):
         """✗ Event creation fails with negative reward"""
@@ -268,7 +254,6 @@ class TestEvents:
         }
         res = auth_client.post("/events/", json=payload, headers=headers)
         assert res.status_code in [400, 422]
-        # ✓ Cleanup: Validation failed, no event created
 
     def test_create_event_zero_reward(self, organizer_auth):
         """✓ Event creation succeeds with zero reward"""
@@ -290,7 +275,6 @@ class TestEvents:
         }
         res = auth_client.post("/events/", json=payload, headers=headers)
         assert res.status_code == 201
-        # ✓ Cleanup: Free event created
 
     # ==================== SEARCH TESTS ====================
 
@@ -299,26 +283,22 @@ class TestEvents:
         res = client.get("/events/search?q=Mùa")
         assert res.status_code in [200, 404]
         # Result is either list of events or 404 if not found
-        # ✓ Cleanup: Read-only operation
 
     # def test_search_event_empty_query(self, client):
     #     """✓ Search with empty query"""
     #     res = client.get("/events/search?q=")
     #     assert res.status_code in [200, 400]
-    #     # ✓ Cleanup: Read-only operation
 
     # def test_search_event_special_chars(self, client):
     #     """✓ Search with special characters"""
     #     res = client.get("/events/search?q=&@#$%")
     #     assert res.status_code in [200, 400]
-    #     # ✓ Cleanup: Read-only operation
 
     # def test_search_event_long_query(self, client):
     #     """✓ Search with long query"""
     #     long_query = "a" * 200
     #     res = client.get(f"/events/search?q={long_query}")
     #     assert res.status_code in [200, 400]
-    #     # ✓ Cleanup: Read-only operation
 
     # ==================== SLOT MANAGEMENT TESTS (BỔ SUNG) ====================
 
