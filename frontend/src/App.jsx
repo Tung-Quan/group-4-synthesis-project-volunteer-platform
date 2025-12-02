@@ -37,7 +37,7 @@ function App() {
 
   return (
     <Routes>
-      {/* === PUBLIC ROUTES (không dùng layout) === */}
+      {/* === PUBLIC ROUTES === */}
       <Route path="/guest" element={<HomePageLoggedOut navigateTo={navigate} />} />
       <Route path="/login" element={<LoginPage />} />
 
@@ -51,7 +51,6 @@ function App() {
           </ProtectedRoute>
         }
       >
-        {/* 2. Các route con (nested) sẽ được render bên trong <Outlet /> của MainLayout */}
         
         {/* Route mặc định (trang chủ) */}
         <Route index element={<HomePageLoggedIn />} />
