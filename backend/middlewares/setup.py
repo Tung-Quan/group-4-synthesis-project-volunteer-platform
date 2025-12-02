@@ -6,7 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from .auth import CSRFMiddleware
 from ..config.env import env_settings
 from ..config.logger import logger
-from datetime import datetime
+from datetime import datetime, UTC
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -23,7 +23,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # except Exception:
         #     # If the body cannot be read (e.g., streaming) just continue
         #     logger.debug("Could not read request body")
-        start = datetime.utcnow()
+        start = datetime.now(UTC)
         try:
             response = await call_next(request)
             response.headers.update({
@@ -37,7 +37,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             # Log exception with full stacktrace then re-raise so exception handlers still run
             logger.exception("Unhandled exception while handling request")
             raise
-        duration = (datetime.utcnow() - start).total_seconds()
+        duration = (datetime.now(UTC) - start).total_seconds()
         logger.info(
             f"Completed {request.method} {request.url} -> {response.status_code} in {duration:.3f}s")
         return response
