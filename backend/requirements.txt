@@ -21,10 +21,8 @@ tzdata==2025.2
 urllib3==2.5.0
 uvicorn==0.22.0
 bcrypt==5.0.0
-# python-jose[cryptography]==1.0.0
 slowapi==0.1.9
 passlib[argon2]==1.7.4
-# transformers==4.57.0
 PyJWT==2.8.0
 orjson == 3.11.3
 itsdangerous == 2.1.2
