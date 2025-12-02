@@ -99,7 +99,7 @@ function Header({ isLoginPage = false }) {
         )}
       </div>
 
-      {/* --- PHẦN MOBILE --- (Logic tương tự phần Desktop) */}
+      {/* --- PHẦN MOBILE ---  */}
       {!isLoginPage && (
         <div className="md:hidden">
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-white focus:outline-none">

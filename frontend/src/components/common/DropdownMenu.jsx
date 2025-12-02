@@ -26,7 +26,7 @@ function DropdownMenu({ title, items, onMenuItemClick = () => {} }) {
                 onClick={(e) => {
                   e.preventDefault();
                   onMenuItemClick(item);
-                  setIsOpen(false); // Đóng menu sau khi cclick
+                  setIsOpen(false);
                 }}
                 className={`block px-4 py-2 text-base text-gray-200 hover:bg-gray-600 ${index < items.length - 1 ? 'border-b border-gray-500' : ''}`}
               >
