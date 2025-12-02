@@ -33,7 +33,7 @@ class TestAuth:
         res = client.post("/auth/register", json=payload)
         assert res.status_code == 200
         assert res.json()["type"] == "ORGANIZER"
-        # ✓ Cleanup: Organizer created with random email
+        # ✓ Data cleanup: organizer created
 
     def test_register_missing_field(self, client):
         """✗ Registration fails without required student_no"""
@@ -41,11 +41,10 @@ class TestAuth:
             "email": get_random_email("missing_field"),
             "password": "123",
             "type": "STUDENT"
-            # Missing student_no
         }
         res = client.post("/auth/register", json=payload)
         assert res.status_code == 400
-        # ✓ Cleanup: Request failed, no user created
+        # ✓ No data created
 
     def test_register_missing_org_no(self, client):
         """✗ Organizer registration fails without organizer_no"""
@@ -54,11 +53,10 @@ class TestAuth:
             "password": "123",
             "type": "ORGANIZER",
             "org_name": "Test Org"
-            # Missing organizer_no
         }
         res = client.post("/auth/register", json=payload)
         assert res.status_code == 400
-        # ✓ Cleanup: Request failed, no user created
+        # ✓ No data created
 
     def test_register_missing_email(self, client):
         """✗ Registration fails without email"""
@@ -70,7 +68,7 @@ class TestAuth:
         }
         res = client.post("/auth/register", json=payload)
         assert res.status_code == 422
-        # ✓ Cleanup: Invalid request, no user created
+        # ✓ No data created
 
     def test_register_missing_password(self, client):
         """✗ Registration fails without password"""
@@ -82,7 +80,7 @@ class TestAuth:
         }
         res = client.post("/auth/register", json=payload)
         assert res.status_code == 422
-        # ✓ Cleanup: Invalid request, no user created
+        # ✓ No data created
 
     def test_register_duplicate_email(self, client):
         """✗ Registration fails with duplicate email"""
@@ -98,7 +96,7 @@ class TestAuth:
         # Second registration: FAILURE
         res2 = client.post("/auth/register", json=payload)
         assert res2.status_code == 409
-        # ✓ Cleanup: First user created, second failed
+        # ✓ Conflict: duplicate email rejected
 
     def test_register_empty_password(self, client):
         """✗ Registration fails with empty password"""
@@ -111,7 +109,7 @@ class TestAuth:
         }
         res = client.post("/auth/register", json=payload)
         assert res.status_code in [400, 422]
-        # ✓ Cleanup: Invalid request, no user created
+        # ✓ No data created
 
     def test_register_empty_email(self, client):
         """✗ Registration fails with empty email"""
@@ -124,7 +122,7 @@ class TestAuth:
         }
         res = client.post("/auth/register", json=payload)
         assert res.status_code in [400, 422]
-        # ✓ Cleanup: Invalid request, no user created
+        # ✓ No data created
 
     # ==================== LOGIN TESTS ====================
 
@@ -143,7 +141,7 @@ class TestAuth:
         
         assert res.status_code == 200
         assert "csrf_token" in res.json()
-        # ✓ Cleanup: User created then logged in
+        # ✓ Data cleanup: user created and logged in
 
     def test_login_fail_wrong_password(self, client, csrf_headers):
         """✗ Login fails with wrong password"""
@@ -159,7 +157,7 @@ class TestAuth:
         })
         
         assert res.status_code == 401
-        # ✓ Cleanup: User created, login failed
+        # ✓ No data created
 
     def test_login_fail_nonexistent_user(self, client, csrf_headers):
         """✗ Login fails for non-existent user"""
@@ -167,7 +165,7 @@ class TestAuth:
             "email": "ghost@nonexistent.com", "password": "any_password"
         })
         assert res.status_code == 401
-        # ✓ Cleanup: No data created
+        # ✓ No data created
 
     def test_login_missing_email(self, client, csrf_headers):
         """✗ Login fails without email"""
@@ -175,7 +173,7 @@ class TestAuth:
             "password": "123"
         })
         assert res.status_code == 422
-        # ✓ Cleanup: Invalid request
+        # ✓ No data created
 
     def test_login_missing_password(self, client, csrf_headers):
         """✗ Login fails without password"""
@@ -183,7 +181,7 @@ class TestAuth:
             "email": "test@test.com"
         })
         assert res.status_code == 422
-        # ✓ Cleanup: Invalid request
+        # ✓ No data created
 
     def test_login_empty_credentials(self, client, csrf_headers):
         """✗ Login fails with empty email and password"""
@@ -191,7 +189,7 @@ class TestAuth:
             "email": "", "password": ""
         })
         assert res.status_code in [401, 422]
-        # ✓ Cleanup: Invalid request
+        # ✓ No data created
 
     # ==================== CSRF TESTS ====================
 
@@ -201,7 +199,7 @@ class TestAuth:
         assert res.status_code == 200
         assert "csrf_token" in res.json()
         assert len(res.json()["csrf_token"]) > 0
-        # ✓ Cleanup: No persistent data
+        # ✓ Read-only operation
 
     def test_csrf_token_format(self, client):
         """✓ CSRF token has expected format"""
@@ -210,7 +208,8 @@ class TestAuth:
         token = res.json()["csrf_token"]
         # Token should be a string
         assert isinstance(token, str)
-        # ✓ Cleanup: No persistent data
+        # ✓ Read-only operation
+
     # ==================== LOGOUT TESTS ====================
 
     def test_logout_success(self, student_auth):
@@ -219,15 +218,15 @@ class TestAuth:
         
         res = stu_client.post("/auth/logout", headers=stu_headers)
         assert res.status_code == 200
-        # ✓ Cleanup: Student auth session created then logged out
+        # ✓ Session terminated
 
     def test_logout_unauthorized(self, client):
         """✗ Logout fails for unauthenticated user"""
         res = client.post("/auth/logout")
         assert res.status_code in [401, 403]
-        # ✓ Cleanup: No data created
+        # ✓ No data created
 
-    # ==================== REFRESH TOKEN TESTS (BỔ SUNG) ====================
+    # ==================== REFRESH TOKEN TESTS ====================
 
     def test_refresh_token_success(self, client, csrf_headers):
         """✓ Refresh access token using refresh cookie"""
@@ -236,18 +235,18 @@ class TestAuth:
             "email": email, "password": "123", "type": "STUDENT", "student_no": "SV_REF"
         })
         
-        # Login để lấy cookie
+        # Login to get cookie
         client.post("/auth/login", json={"email": email, "password": "123"}, headers=csrf_headers)
         
-        # Gọi refresh
+        # Call refresh
         res = client.post("/auth/refresh", headers=csrf_headers)
         assert res.status_code == 200
         assert "Access token refreshed" in res.json()["message"]
-        # ✓ Cleanup: Token refreshed
+        # ✓ Data cleanup: token refreshed
 
     def test_refresh_token_missing(self, client):
         """✗ Refresh fails without cookie"""
-        # Xóa cookie giả lập
         client.cookies.clear()
         res = client.post("/auth/refresh")
         assert res.status_code == 401
+        # ✓ No data created
