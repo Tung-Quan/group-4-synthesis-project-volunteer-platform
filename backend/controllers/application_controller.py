@@ -47,7 +47,7 @@ def apply_event(request, student_user_id):
     slot_query = """
         SELECT capacity
         FROM event_slots
-        WHERE id = %s AND event_id = %s AND status = 'approved';
+        WHERE id = %s AND event_id = %s;
     """
     slot = db.fetch_one_sync(slot_query, (request.slot_id, request.event_id))
     if not slot:
@@ -85,7 +85,6 @@ def apply_event(request, student_user_id):
         return {"message": "Failed registration. Please try again"}, 500
 
     return {"message": "Successfully registered!"}, 201
-
 
 def review_application(event_id, request, organizer_id):
     app_query = """
