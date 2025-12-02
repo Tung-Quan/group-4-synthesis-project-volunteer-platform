@@ -1,13 +1,40 @@
-import React from 'react';
-import Header from '../components/common/Header';
-import Footer from '../components/common/Footer';
-import ApplicationListItem from '../components/application/ApplicationListItem';
+import React, { useEffect, useState } from 'react';
+import ApplicationEventListItem from '../components/application/ApplicationEventListItem';
 import { useNavigate } from 'react-router-dom';
-import { applicationDetails } from '../mockdata/mockApplications'; // Lấy dữ liệu trực tiếp
+import apiClient from '../api/apiClient';
 
-
+//Make it show events and their shifts, then shows the applications when selecting a shift (slot)
+//The API call is '/applications/{event_id}/{slot_id}'
+//Select in order: Event -> Slot -> Applications
 function ApplicationReviewPage() {
     const navigate = useNavigate();
+
+    const [error, setError] = useState(null);
+    const [activities, setActivities] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOwnEvents = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.get('/events/get-own-event');
+        setActivities(response.data);
+      } catch (err) {
+        if (err.response?.status === 404) {
+          setActivities([]);
+        } else {
+          setError("Không thể tải danh sách hoạt động. Vui lòng thử lại.");
+        }
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchOwnEvents();
+  }, []);
+
+  if (isLoading) return <div className="text-center p-4">Đang tải...</div>;
+  if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
 
   return (
       <>
@@ -22,15 +49,15 @@ function ApplicationReviewPage() {
         </div>
         
         <h1 className="text-3xl font-serif font-bold text-center text-gray-800 my-6">
-          DANH SÁCH ĐƠN ĐĂNG KÍ
+          DANH SÁCH HOẠT ĐỘNG NHẬN ĐƠN
         </h1>
 
         <div className="bg-white p-6 rounded-lg shadow-md">
-          {applicationDetails.length > 0 ? (
-            applicationDetails.map(application => (
-              <ApplicationListItem 
-                key={application.id} 
-                application={application}
+          {activities.length > 0 ? (
+            activities.map(a => (
+              <ApplicationEventListItem 
+                key={a.id}
+                event={a}
               />
             ))
           ) : (

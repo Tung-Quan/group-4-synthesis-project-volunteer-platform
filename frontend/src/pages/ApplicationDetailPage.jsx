@@ -10,17 +10,17 @@ import { getApplication } from '../mockdata/mockApplications'; // Lấy hàm tì
 function ApplicationDetailPage() {
   const handleAcceptClick = () => {
     console.log(`Đồng ý đơn ứng tuyển ID: ${selectedApplication.id}`);
-    alert(`Bạn đã đồng ý cho "${getUserDisplayName(selectedApplication.volunteerId)}" tham gia hoạt động (Đây là demo).`);
+    alert(`Bạn đã đồng ý cho "${getUserDisplayName(selectedApplication.volunteerId)}".`);
   };
 
   const handleRejectClick = () => {
     console.log(`Từ chối đơn ứng tuyển ID: ${selectedApplication.id}`);
-    alert(`Bạn đã từ chối cho "${getUserDisplayName(selectedApplication.volunteerId)}" tham gia hoạt động (Đây là demo).`);
+    alert(`Bạn đã từ chối cho "${getUserDisplayName(selectedApplication.volunteerId)}".`);
   };
-  const { appId } = useParams(); // 3. Lấy ID đơn từ URL
+  const { eventId } = useParams(); // 3. Lấy ID đơn từ URL
   const navigate = useNavigate();
 
-  const selectedApplication = getApplication(appId); // 4. Tự tìm dữ liệu
+  const selectedApplication = getApplication(eventId); // 4. Tự tìm dữ liệu
 
   return (
     <>
