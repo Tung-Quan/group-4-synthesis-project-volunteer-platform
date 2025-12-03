@@ -44,15 +44,14 @@ const ContentRow = ({ label, children }) => (
   </div>
 );
 
-
-function ActivityContent({ description, location }) {
+//unused file?
+function ActivityContent({ description }) {
   return (
     <div className="space-y-1 text-base">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Chi tiết hoạt động</h2>
-      <ContentRow label="Địa điểm chính">{location || 'Xem chi tiết trong các ca làm việc'}</ContentRow>
-      <ContentRow label="Nội dung">
-        <p className="whitespace-pre-wrap">{description || 'Không có mô tả chi tiết.'}</p>
-      </ContentRow>
+      <h2 className="text-xl font-bold text-gray-800 mb-4">Nội dung hoạt động</h2>
+      <div className="flex flex-col sm:flex-row py-2 border-b border-gray-200 last:border-b-0">
+        <span className="text-gray-700 break-words">{description}</span>
+      </div>
     </div>
   );
 }

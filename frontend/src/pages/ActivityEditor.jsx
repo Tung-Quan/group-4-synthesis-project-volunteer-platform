@@ -20,7 +20,9 @@ const SlotInput = ({ index, slot, updateSlot, removeSlot }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700">Ngày làm việc</label>
-          <input type="date" name="work_date" value={slot.work_date} onChange={handleChange} required className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"/>
+          <input type="date" name="work_date" value={slot.work_date} onChange={handleChange} required
+		  	className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+			/>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Ngày CTXH thưởng</label>
@@ -59,8 +61,9 @@ function ActivityEditor() {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await apiClient.get(`/events/${activityId}`); //ok now why is it raising error
+        const response = await apiClient.get(`/events/${activityId}`);
         setActivity(response.data);
+		console.log(response.data); //to debug
       } catch (err) {
         setError("Không thể tải thông tin hoạt động này.");
         console.error(`Error fetching activity ${activityId}:`, err);
@@ -70,6 +73,8 @@ function ActivityEditor() {
     };
     fetchActivityDetail();
   }, [activityId]);
+
+  const oldActivity = activity;
   
   // State cho thông tin chung của sự kiện
   const [eventData, setEventData] = useState({
@@ -131,7 +136,7 @@ function ActivityEditor() {
   const handleUpdateGeneral = async (updatedData) => {
     try {
             const response = await apiClient.patch(`/events/${activityId}`, updatedData);
-            alert("Hoạt động đã được cập nhật thành công!");
+            alert("Cập nhật thông tin chung thành công!");
             //this isn't really a good way to show new data on screen (another API call) but whatever
             const refreshData = await apiClient.get(`/events/${activityId}`);
             setActivity(refreshData.data);
@@ -164,15 +169,24 @@ function ActivityEditor() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Tên hoạt động</label>
-              <input type="text" name="title" value={eventData.title} onChange={handleEventChange} required className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"/>
+              <input type="text" name="title" value={eventData.title} onChange={handleEventChange} required
+			  	className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+				placeholder={oldActivity.title}
+			  />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Mô tả</label>
-              <textarea name="description" value={eventData.description} onChange={handleEventChange} required rows="4" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></textarea>
+              <textarea name="description" value={eventData.description} onChange={handleEventChange} required rows="4"
+			    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+				placeholder={oldActivity.description}	
+			  />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Địa điểm chung</label>
-              <input type="text" name="location" value={eventData.location} onChange={handleEventChange} required className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"/>
+              <input type="text" name="location" value={eventData.location} onChange={handleEventChange} required
+			    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+				placeholder={oldActivity.location}
+			  />
             </div>
           </div>
 
@@ -182,7 +196,7 @@ function ActivityEditor() {
 				disabled={isLoading}
 				className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg disabled:bg-blue-300"
 			>
-				{isLoading ? 'Đang cập nhật...' : 'Cập nhật'}
+				{isLoading ? 'Đang cập nhật...' : 'Cập nhật thông tin chung'}
 			</button>
 			</div>
         </div>
@@ -219,7 +233,7 @@ function ActivityEditor() {
             disabled={isLoading}
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg disabled:bg-blue-300"
           >
-            {isLoading ? 'Đang cập nhật...' : 'Cập nhật'}
+            {isLoading ? 'Đang cập nhật...' : 'Cập nhật ca làm việc'}
           </button>
         </div>
       </form>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import ActivityContent from '../components/activity/ActivityContent';
 import ActivityDetailDashboardHeader from '../components/activity/ActivityDetailDashboardHeader';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../api/apiClient';
+import AttendancePerSlotItem from '../components/attendance/AttendancePerSlotItem';
 
 function ActivityDetailDashboard() {
   const { activityId } = useParams();
@@ -34,6 +34,23 @@ function ActivityDetailDashboard() {
   if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
   if (!activity) return <div className="text-center p-4">Không tìm thấy hoạt động.</div>;
 
+  function compareTime(slot1, slot2) {
+		//we abusing strings with this one
+		let date1 = new Date(slot1.work_date + 'T' + slot1.starts_at);
+		let date2 = new Date(slot2.work_date + 'T' + slot2.starts_at);
+
+		if (date1 < date2) {
+			return -1;
+		}
+		else if (date2 > date1) {
+			return 1;
+		}
+		else {
+			return 0;
+		}
+	}
+	const slots = activity.slots.sort(compareTime);
+
   return (
     <>
         <div className="mb-6">
@@ -52,13 +69,24 @@ function ActivityDetailDashboard() {
         />
 
         <div className="bg-white p-6 mt-6 rounded-x1 shadow-md border border-gray-200">
-          {/*<ActivityStats 
-            maxDays={selectedActivity.stats.maxDays} 
-            approvedDays={selectedActivity.stats.approvedDays} 
-            duration={selectedActivity.stats.duration} 
-          />
-          <hr className="my-4 border-gray-300" />*/}
-          <ActivityContent description={activity.description} location={activity.location}/>
+          <div className="space-y-1 text-base">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Nội dung hoạt động</h2>
+            <div className="flex flex-col sm:flex-row py-2 border-b border-gray-200 last:border-b-0">
+              <span className="text-gray-700 break-words">{activity.description}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 mt-6 rounded-x1 shadow-md border border-gray-200">
+          <div className="space-y-1 text-base">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Các ca hoạt động</h2>
+          </div>
+          <hr></hr>
+          {
+            slots.map((slot, index) => {
+              return <AttendancePerSlotItem key={slot.slot_id} slot={slot} index={index + 1}/>
+            })
+          }
         </div>
       </>
   );

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import apiClient from "../api/apiClient";
-import ApplicationListItem from "../components/application/ApplicationListItem";
+import AttendVolunteer from "../components/attendance/AttendVolunteer";
 
-function SeeAppInSlotPage() {
+function CheckAttendance() {
 	const { activityId, slotId } = useParams();
 	const navigate = useNavigate();
 
@@ -20,11 +20,11 @@ function SeeAppInSlotPage() {
       try {
         setIsLoading(true);
         const response = await apiClient.get(`/applications/${activityId}/${slotId}`);
-		    const eventInfo = await apiClient.get(`/events/${activityId}`);
-		    const slotInfo = await apiClient.get(`/events/slots/${slotId}`);
+		const eventInfo = await apiClient.get(`/events/${activityId}`);
+		const slotInfo = await apiClient.get(`/events/slots/${slotId}`);
         setApplications(response.data);
-		    setActivity(eventInfo.data);
-		    setSlot(slotInfo.data);
+		setActivity(eventInfo.data);
+		setSlot(slotInfo.data);
       } catch (err) {
         if (err.response?.status === 404) {
           setApplications([]);
@@ -57,7 +57,7 @@ function SeeAppInSlotPage() {
         </div>
 
 		    <h1 className="text-3xl font-serif font-bold text-center text-gray-800 my-6">
-          DANH SÁCH ĐĂNG KÝ {activity.title}
+          ĐIỂM DANH HOẠT ĐỘNG {activity.title}
         </h1>
 		    <h2 className="text-2xl font-serif font-bold text-center text-gray-700 my-4">
           CA NGÀY {new Date(slot.work_date).toLocaleDateString('vi-VN', {
@@ -66,18 +66,18 @@ function SeeAppInSlotPage() {
         </h2>
 
 		<div className="bg-white p-6 rounded-lg shadow-md">
-      {/*
-        react.js freaks out when trying to preprocess earlier
-        also still gives no data when empty response
-      */}
-			{applications.filter(a => (a.status === "applied")).length > 0 ? (
-				applications.filter(a => (a.status === "applied")).map(a => <ApplicationListItem key={a.student_no} application={a}/>)
+		{/*
+			react.js freaks out when trying to preprocess earlier
+			also still gives no data when empty response
+		*/}
+			{applications.filter(a => (a.status === "approved")).length > 0 ? (
+				applications.filter(a => (a.status === "approved")).map(a => <AttendVolunteer key={a.student_no} volunteer={a}/>)
 			) : (
-			<p className="text-center text-gray-500">Hiện ca này không có đơn nào chờ duyệt.</p>
+			<p className="text-center text-gray-500">Danh sách điểm danh trống.</p>
 			)}
         </div>
 		</>
 	);
 }
 
-export default SeeAppInSlotPage;
+export default CheckAttendance;
