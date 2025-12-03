@@ -20,15 +20,14 @@ function SeeAppInSlotPage() {
       try {
         setIsLoading(true);
         
-        // 1. Dùng Promise.all để gọi song song (nhanh hơn và tránh việc 1 cái lỗi làm cái kia không chạy)
-        // Lưu ý: Đã sửa URL dòng đầu tiên (bỏ chữ /slots thừa)
+        // Dùng Promise.all để gọi song song
         const [appRes, eventRes, slotRes] = await Promise.all([
             apiClient.get(`/applications/${activityId}/slots/${slotId}`), 
             apiClient.get(`/events/${activityId}`),
             apiClient.get(`/events/slots/${slotId}`)
         ]);
 
-        // 2. Lọc dữ liệu NGAY LÚC LẤY VỀ (Tránh set state 2 lần)
+        // ọc dữ liệu NGAY LÚC LẤY VỀ 
         const validApps = appRes.data.filter(s => s.status === "applied");
         setApplications(validApps);
         
@@ -36,9 +35,7 @@ function SeeAppInSlotPage() {
 		setSlot(slotRes.data);
 
       } catch (err) {
-        // Nếu lỗi 404 ở danh sách đơn -> coi như rỗng, nhưng vẫn cần load Activity/Slot
-        // Tuy nhiên vì dùng Promise.all, nếu 1 cái lỗi nó sẽ nhảy vào đây ngay.
-        // Tạm thời xử lý đơn giản:
+        // thông báo nếu có lỗi 404 xảy ra (không có event/slot này) 
         console.error(err);
         setError("Có lỗi xảy ra hoặc không tìm thấy dữ liệu.");
       } finally {
@@ -51,12 +48,10 @@ function SeeAppInSlotPage() {
   	if (isLoading) return <div className="text-center p-4">Đang tải các hồ sơ...</div>;
 	if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
 
-    // 3. QUAN TRỌNG: Kiểm tra dữ liệu null trước khi render để tránh crash "Cannot read properties of null"
+    // kiểm tra dữ liệu null trước khi render để tránh crash "Cannot read properties of null"
     if (!activity || !slot) {
         return <div className="text-center p-4 text-gray-500">Không tìm thấy thông tin hoạt động hoặc ca này.</div>;
     }
-
-    // --- ĐÃ XÓA DÒNG GÂY LỖI: setApplications(...) ở đây ---
 
   	return (
 		<>
