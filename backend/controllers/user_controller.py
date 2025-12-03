@@ -19,7 +19,7 @@ def get_user_profile(user_id: str) -> dict:
         return {"error": "User not found", "status_code": 404}
     user_type = user_row['type']
 
-    # 2. Phân nhánh logic (Chỉ còn STUDENT hoặc ORGANIZER)
+    # 2. Phân nhánh logic ( STUDENT hoặc ORGANIZER)
     if user_type == 'STUDENT':
         query_joined = "SELECT COUNT(*) as count FROM applications WHERE student_user_id = %s AND status = 'attended'"
 
@@ -77,7 +77,6 @@ def get_user_profile(user_id: str) -> dict:
             }
         }
 
-    # Nếu no roles or BOTH -> Trả về cơ bản
     return user_row
 
 
@@ -95,16 +94,14 @@ def update_user_profile(user_id: str, request: UpdateProfileRequest) -> dict:
         update_fields.append("phone = %s")
         params.append(request.phone)
 
-    # Nếu không có gì để update -> Báo lỗi nhẹ
+    # No field to update
     if not update_fields:
         return {"error": "No fields to update", "status_code": 400}
 
     params.append(user_id)
 
-    # Tạo câu lệnh SQL động
     set_clause = ", ".join(update_fields) + ", updated_at = NOW()"
 
-    # Dùng f-string đúng cách (chỉ ghép chuỗi lệnh, không ghép giá trị)
     query = f"""
     UPDATE users
     SET {set_clause}
