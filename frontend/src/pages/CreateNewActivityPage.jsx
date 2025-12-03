@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 
-// Component con để quản lý một slot trong form
 const SlotInput = ({ index, slot, updateSlot, removeSlot }) => {
   const handleChange = (e) => {
     updateSlot(index, { ...slot, [e.target.name]: e.target.value });
@@ -50,14 +49,12 @@ function CreateNewActivityPage() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  // State cho thông tin chung của sự kiện
   const [eventData, setEventData] = useState({
     title: '',
     description: '',
     location: '',
   });
 
-  // State cho mảng các slots
   const [slots, setSlots] = useState([
     { work_date: '', starts_at: '', ends_at: '', capacity: 10, day_reward: 1.0 }
   ]);
@@ -95,7 +92,6 @@ function CreateNewActivityPage() {
     };
 
     try {
-      // Gọi API POST /events/ theo tài liệu
       const response = await apiClient.post('/events/', payload);
       alert("Tạo hoạt động mới thành công!");
       navigate('/organizer/dashboard');
@@ -120,7 +116,6 @@ function CreateNewActivityPage() {
         </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Phần thông tin chung */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-bold mb-4">Thông tin chung</h2>
           <div className="space-y-4">
@@ -139,7 +134,6 @@ function CreateNewActivityPage() {
           </div>
         </div>
 
-        {/* Phần quản lý Slots */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">Các ca làm việc (Slots)</h2>
@@ -162,7 +156,6 @@ function CreateNewActivityPage() {
         
         {error && <div className="text-red-500 text-center p-2 bg-red-100 rounded">{error}</div>}
 
-        {/* Nút Submit */}
         <div className="flex justify-end">
           <button 
             type="submit" 

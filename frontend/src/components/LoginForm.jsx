@@ -27,8 +27,12 @@ function LoginForm() {
       const { user, csrf_token } = response.data;
       login(user, csrf_token);
 
-      const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
+      const fromPath = location.state?.from?.pathname;
+      if (fromPath && fromPath !== '/login' && fromPath !== '/guest') {
+        navigate(fromPath, { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
 
     } catch (err) {
       const errorMessage = err.response?.data?.detail || 'Email hoặc mật khẩu không đúng.';

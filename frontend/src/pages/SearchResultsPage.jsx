@@ -27,7 +27,7 @@ function SearchResultsPage() {
         setResults(response.data);
       } catch (err) {
         if (err.response?.status === 404) {
-          setResults([]); // Không tìm thấy kết quả
+          setResults([]);
         } else {
           setError("Có lỗi xảy ra khi tìm kiếm.");
         }
@@ -67,7 +67,6 @@ function SearchResultsPage() {
                 id: event.event_id,
                 title: event.event_name,
                 location: event.location || 'N/A',
-                // API search trả về 1 mảng slots, ta có thể lấy ngày của slot đầu tiên
                 date: event.slots?.length > 0
                   ? new Date(event.slots[0].work_date).toLocaleDateString('vi-VN')
                   : 'N/A',
