@@ -3,12 +3,12 @@ from fastapi.testclient import TestClient
 from backend.main import app 
 import random
 
-# Helper tạo email ngẫu nhiên
+# Helper function for random email pattern
 def get_random_email(prefix="user"):
     return f"{prefix}_{random.randint(10000, 99999)}@test.com"
 
-# --- CLIENT CHO ORGANIZER ---
-@pytest.fixture(scope="function") # Đổi thành function để mỗi test có client mới sạch sẽ
+# --- Client for ORGANIZER ---
+@pytest.fixture(scope="function")
 def organizer_client():
     with TestClient(app) as c:
         yield c
@@ -37,10 +37,10 @@ def organizer_auth(organizer_client):
     new_token = login_res.json()["csrf_token"]
     user_id = login_res.json()["user"]["id"]
     
-    # Trả về cả CLIENT đã login để dùng
+    # return logined CLIENT
     return organizer_client, {"X-CSRF-Token": new_token}, user_id
 
-# --- CLIENT CHO STUDENT ---
+# --- Client for STUDENT ---
 @pytest.fixture(scope="function")
 def student_client():
     with TestClient(app) as c:
@@ -69,7 +69,7 @@ def student_auth(student_client):
     
     return student_client, {"X-CSRF-Token": new_token}, user_id
 
-# Giữ lại client chung cho các test đơn giản
+# Client for simple test
 @pytest.fixture(scope="module")
 def client():
     with TestClient(app) as c:
