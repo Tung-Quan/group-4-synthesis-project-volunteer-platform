@@ -6,7 +6,7 @@ function EventSlot({ slot }) {
 
 	const handleViewApplications = () => {
 		console.log(`Đang xem hoạt động ID ${activityId}, slot ${slot.slot_id}.`);
-		navigate(`organizer/applications/${activityId}/${slot.slot_id}`);
+		navigate(`/organizer/applications/${activityId}/${slot.slot_id}`);
 	}
 
 	return (

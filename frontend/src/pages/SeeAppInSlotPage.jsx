@@ -28,6 +28,8 @@ function SeeAppInSlotPage() {
       } catch (err) {
         if (err.response?.status === 404) {
           setApplications([]);
+		  setActivity([]);
+		  setSlot([]);
         } else {
           setError("Không thể tải các hồ sơ được gửi về. Vui lòng thử lại.");
         }
@@ -43,7 +45,7 @@ function SeeAppInSlotPage() {
 	if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
 
 	setApplications(applications.filter(s => (s.status === "applied")))
-	//This goddamn code assumes time format is always HH:MM:SS.SSSZ
+	
   	return (
 		<>
 		<div className="mb-4">
@@ -60,7 +62,7 @@ function SeeAppInSlotPage() {
           DANH SÁCH ĐĂNG KÝ {activity.title}
         </h1>
 		<h2 className="text-2xl font-serif font-bold text-center text-gray-700 my-4">
-          CA NGÀY {slot.work_date} TỪ {slot.starts_at.substring(0, 5)} ĐẾN {slot.ends_at.substring(0, 5)}
+          CA NGÀY {slot.work_date} TỪ {slot.starts_at} ĐẾN {slot.ends_at}
         </h2>
 
 		<div className="bg-white p-6 rounded-lg shadow-md">
