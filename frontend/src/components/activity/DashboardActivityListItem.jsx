@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
+//Might need to re-add timeframe
 function DashboardActivityListItem({ activity }) {
   const navigate = useNavigate();
   const handleDetailsClick = () => {

@@ -50,6 +50,7 @@ class ApplicationDetail(BaseModel):
     status: str
 
 class ApplicationResponse(BaseModel):
+    student_user_id: str
     student_name: str
     student_no: str
     note: str

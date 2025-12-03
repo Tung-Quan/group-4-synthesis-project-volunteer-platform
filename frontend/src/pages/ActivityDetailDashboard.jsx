@@ -35,8 +35,10 @@ function ActivityDetailDashboard() {
   const handleUpdateEvent = async (updatedData) => {
     try {
             const response = await apiClient.patch(`/events/${activityId}`, updatedData);
-            setActivity(response.data);
             alert("Hoạt động đã được cập nhật thành công!");
+            //this isn't really a good way to show new data on screen (another API call) but whatever
+            const refreshData = await apiClient.get(`/events/${activityId}`);
+            setActivity(refreshData.data);
             setIsEditModalOpen(false);
         } catch (err) {
             console.error("Failed to update event:", err);
@@ -47,15 +49,6 @@ function ActivityDetailDashboard() {
   if (isLoading) return <div className="text-center p-4">Đang tải chi tiết hoạt động...</div>;
   if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
   if (!activity) return <div className="text-center p-4">Không tìm thấy hoạt động.</div>;
-
-  const headerProps = {
-    id: activity.id,
-    title: activity.title,
-    time: activity.slots?.length > 0
-      ? `Từ ${new Date(activity.slots[0].work_date).toLocaleDateString('vi-VN')} đến ${new Date(activity.slots[activity.slots.length - 1].work_date).toLocaleDateString('vi-VN')}`
-      : null,
-    locationDetail: activity.location,
-  };
 
   return (
     <>
@@ -70,7 +63,7 @@ function ActivityDetailDashboard() {
         </div>
         
         <ActivityDetailDashboardHeader
-          activity={headerProps}
+          activity={activity}
           onModifyClick={() => setIsEditModalOpen(true)}
         />
 
@@ -79,9 +72,9 @@ function ActivityDetailDashboard() {
             maxDays={selectedActivity.stats.maxDays} 
             approvedDays={selectedActivity.stats.approvedDays} 
             duration={selectedActivity.stats.duration} 
-          />*/}
-          <hr className="my-4 border-gray-300" />
-          <ActivityContent details={activity.description} />
+          />
+          <hr className="my-4 border-gray-300" />*/}
+          <ActivityContent description={activity.description} location={activity.location}/>
         </div>
 
         <EditActivityModal
