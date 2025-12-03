@@ -269,7 +269,7 @@ def get_history(student_user_id):
         """
     results = db.execute_query_sync(query, (student_user_id,))
     if not results:
-        return None
+        return []
     return results
 
 
@@ -293,11 +293,20 @@ def get_participating(student_user_id):
         """
     results = db.execute_query_sync(query, (student_user_id,))
     if not results:
-        return None
+        return []
     return results
 
 
 def get_application_details(slot_id, student_user_id):
+    check_exist = """
+        SELECT id
+        FROM event_slots
+        WHERE id = %s;
+        """
+    res = db.execute_query_sync(check_exist, (slot_id,))
+    if not res:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    
     query = """
         SELECT
             a.event_id,
@@ -319,7 +328,7 @@ def get_application_details(slot_id, student_user_id):
     """
     results = db.execute_query_sync(query, (slot_id, student_user_id))
     if not results:
-        return None
+        return []
     return results
 
 def get_application_by_slotId(event_id, slot_id):
