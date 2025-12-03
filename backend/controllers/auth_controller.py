@@ -143,7 +143,7 @@ def attach_csrf_token(session: dict) -> str:
 
 def regenerate_csrf_token(session: dict) -> str:
     """
-    BẮT BUỘC tạo mới CSRF token và ghi đè lên cái cũ.
+    tạo mới CSRF token và ghi đè lên cái cũ.
     Dùng riêng cho hành động Login để bảo mật (Session Rotation).
     """
     new_token = make_csrf()

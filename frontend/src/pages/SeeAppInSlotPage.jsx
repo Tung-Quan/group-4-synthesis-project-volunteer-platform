@@ -20,7 +20,7 @@ function SeeAppInSlotPage() {
       try {
         setIsLoading(true);
         
-        // Dùng Promise.all để gọi song song
+        // Dùng Promise.all để gọi song song 
         const [appRes, eventRes, slotRes] = await Promise.all([
             apiClient.get(`/applications/${activityId}/slots/${slotId}`), 
             apiClient.get(`/events/${activityId}`),
@@ -46,7 +46,9 @@ function SeeAppInSlotPage() {
   	}, [activityId, slotId]);
 
   	if (isLoading) return <div className="text-center p-4">Đang tải các hồ sơ...</div>;
-	if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
+	  if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
+    
+    console.log(slot);
 
     // kiểm tra dữ liệu null trước khi render để tránh crash "Cannot read properties of null"
     if (!activity || !slot) {
@@ -73,8 +75,12 @@ function SeeAppInSlotPage() {
         </h2>
 
 		<div className="bg-white p-6 rounded-lg shadow-md">
-			{applications.length > 0 ? (
-			applications.map(a => <ApplicationListItem key={a.student_no} application={a}/>)
+      {/*
+        react.js freaks out when trying to preprocess earlier
+        also still gives no data when empty response
+      */}
+			{applications.filter(s => (s.status === "applied")).length > 0 ? (
+				applications.filter(s => (s.status === "applied")).map(a => <ApplicationListItem key={a.student_no} application={a}/>)
 			) : (
 			<p className="text-center text-gray-500">Hiện ca này không có đơn nào chờ duyệt.</p>
 			)}

@@ -36,16 +36,13 @@ def get_own_events(current_user: dict = Depends(require_types("ORGANIZER"))):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return result
 
-# 1.  GET Events upcoming
 @router.get("/upcoming", response_model=list[event_models.EventListResponse])
 def get_upcoming_events():
     result = event_controller.get_upcoming_events()
-    # Nếu không có event nào, trả về list rỗng thay vì 404
     if result is None:
         return []
     return result
 
-# 2. Get Events Ongoing
 @router.get("/ongoing", response_model=list[event_models.EventListResponse])
 def get_ongoing_events():
     result = event_controller.get_ongoing_events()

@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import apiClient from "../../api/apiClient";
 import ApplicationReviewModal from "./ApplicationReviewModal";
+import { useAuth } from "../../context/AuthContext";
 
 function ApplicationListItem({ application }) {
 	const { activityId, slotId } = useParams();
+  const { user, setUser } = useAuth();
 
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [approved, setApproved] = useState(false);

@@ -32,19 +32,3 @@ app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(user_router, prefix="/users", tags=["Users"])
 app.include_router(events_router, prefix="/events", tags=["Events"])
 app.include_router(application_router, prefix="/applications", tags=["Applications"])
-
-"""
-class ProfileRequest(BaseModel):
-    user_id: str
-    
-@app.get("/api/profile")
-@app.post("/api/profile")
-def profile(request: ProfileRequest):
-    query = f"SELECT id, email, display_name, type, is_active, created_at, updated_at FROM users WHERE id = '{request.user_id}'"
-    user = db.execute_query_sync(query)
-    if user:
-        return {"user": user[0]}, 200
-    return {"message": "User not found"}, 404
-
-# EVENT APIs
-"""
