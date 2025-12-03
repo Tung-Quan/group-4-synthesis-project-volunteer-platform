@@ -412,7 +412,7 @@ student_auth
 
 ## Summary
 
-- **60+ comprehensive tests** across 4 test files
+- **80+ comprehensive tests** across 4 test files
 - **Clear test purposes** with ✓/✗ indicators
 - **Organized by functionality** (auth, events, applications, users)
 - **Error scenarios covered** for validation and security
