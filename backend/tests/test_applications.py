@@ -387,7 +387,7 @@ class TestApplicationWorkflow:
         
         assert res.status_code == 403
 
-    # ==================== CANCEL & HISTORY TESTS (BỔ SUNG) ====================
+    # ==================== CANCEL & HISTORY TESTS ====================
 
     def test_student_cancel_application(self, organizer_auth, student_auth):
         """✓ Student cancels their application"""
@@ -415,7 +415,7 @@ class TestApplicationWorkflow:
         org_client, org_headers, _ = organizer_auth
         stu_client, stu_headers, _ = student_auth
 
-        # 1. Tạo Event
+        # 1. create Event
         res = org_client.post("/events/", json={
             "title": "History Test", "description": "...", "location": "...",
             "slots": [{"work_date": str(date.today() + timedelta(days=5)), "starts_at": "08:00:00", "ends_at": "12:00:00", "capacity": 5, "day_reward": 1}]
@@ -424,27 +424,27 @@ class TestApplicationWorkflow:
         event_id = res.json()["event_id"]
         slot_id = res.json()["slot_ids"][0]
 
-        # --- FIX: THÊM BƯỚC ĐĂNG KÝ (APPLY) ---
+        # --- (APPLY) ---
         apply_res = stu_client.post("/applications/apply", json={
             "event_id": event_id,
             "slot_id": slot_id,
             "note": "Join for test"
         }, headers=stu_headers)
-        assert apply_res.status_code == 200 # Hoặc 201 tùy server
+        assert apply_res.status_code == 200
 
-        # 2. Check Participating (Giờ mới có dữ liệu để check)
+        # 2. Check Participating
         res_part = stu_client.get("/applications/participating", headers=stu_headers)
         assert res_part.status_code == 200
         assert len(res_part.json()) > 0
 
-    # ==================== DETAIL & LIST TESTS (BỔ SUNG) ====================
+    # ==================== DETAIL & LIST TESTS ====================
 
     def test_get_history_details(self, organizer_auth, student_auth):
         """✓ Get details of a specific history item"""
         org_client, org_headers, _ = organizer_auth
         stu_client, stu_headers, _ = student_auth
         
-        # Tạo & Apply
+        # Create & Apply
         res = org_client.post("/events/", json={
             "title": "Detail Test", "description": "Desc", "location": "Loc",
             "slots": [{"work_date": str(date.today() + timedelta(days=5)), "starts_at": "08:00:00", "ends_at": "12:00:00", "capacity": 5, "day_reward": 1}]
@@ -453,7 +453,7 @@ class TestApplicationWorkflow:
         
         stu_client.post("/applications/apply", json={"event_id": res.json()["event_id"], "slot_id": slot_id, "note": "Join"}, headers=stu_headers)
 
-        # Lấy chi tiết đơn vừa apply (dựa theo slot_id)
+        # get details of application base on slot_id
         res_detail = stu_client.get(f"/applications/history/{slot_id}", headers=stu_headers)
         assert res_detail.status_code == 200
         assert len(res_detail.json()) > 0
@@ -464,7 +464,7 @@ class TestApplicationWorkflow:
         org_client, org_headers, _ = organizer_auth
         stu_client, stu_headers, _ = student_auth
         
-        # Tạo & Apply
+        # Create & Apply
         res = org_client.post("/events/", json={
             "title": "Applicant List Test", "description": "...", "location": "...",
             "slots": [{"work_date": str(date.today() + timedelta(days=5)), "starts_at": "08:00:00", "ends_at": "12:00:00", "capacity": 5, "day_reward": 1}]
@@ -474,8 +474,8 @@ class TestApplicationWorkflow:
         
         stu_client.post("/applications/apply", json={"event_id": event_id, "slot_id": slot_id, "note": "I am here"}, headers=stu_headers)
 
-        # Organizer xem danh sách
-        res_list = org_client.get(f"/applications/{event_id}/{slot_id}", headers=org_headers)
+        # Organizer see list of applications of specific event slot
+        res_list = org_client.get(f"/applications/{event_id}/slots/{slot_id}", headers=org_headers)
         assert res_list.status_code == 200
         assert len(res_list.json()) >= 1
         assert res_list.json()[0]["note"] == "I am here"

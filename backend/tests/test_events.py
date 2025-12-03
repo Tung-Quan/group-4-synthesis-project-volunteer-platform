@@ -300,20 +300,20 @@ class TestEvents:
     #     res = client.get(f"/events/search?q={long_query}")
     #     assert res.status_code in [200, 400]
 
-    # ==================== SLOT MANAGEMENT TESTS (BỔ SUNG) ====================
+    # ==================== SLOT MANAGEMENT TESTS ====================
 
     def test_add_extra_slot(self, organizer_auth):
         """✓ Organizer adds a new slot to existing event"""
         client, headers, _ = organizer_auth
         
-        # 1. Tạo event trước
+        # 1. create event 
         res = client.post("/events/", json={
             "title": "Slot Test", "description": "...", "location": "...",
-            "slots": [] # Tạo event rỗng slot trước
+            "slots": [] # create event without slot
         }, headers=headers)
         event_id = res.json()["event_id"]
 
-        # 2. Thêm slot mới
+        # 2. add new slot
         slot_payload = {
             "work_date": str(date.today() + timedelta(days=10)),
             "starts_at": "08:00:00", "ends_at": "10:00:00",
@@ -328,7 +328,7 @@ class TestEvents:
         """✓ Organizer updates a slot"""
         client, headers, _ = organizer_auth
         
-        # 1. Tạo event có slot
+        # 1. create event with slot
         res = client.post("/events/", json={
             "title": "Update Slot Test", "description": "...", "location": "...",
             "slots": [{"work_date": str(date.today()), "starts_at": "08:00:00", "ends_at": "10:00:00", "capacity": 5, "day_reward": 1}]
@@ -347,14 +347,14 @@ class TestEvents:
         """✓ Organizer deletes a slot"""
         client, headers, _ = organizer_auth
         
-        # 1. Tạo event có slot
+        # 1. create event with slot
         res = client.post("/events/", json={
             "title": "Delete Slot Test", "description": "...", "location": "...",
             "slots": [{"work_date": str(date.today()), "starts_at": "08:00:00", "ends_at": "10:00:00", "capacity": 5, "day_reward": 1}]
         }, headers=headers)
         slot_id = res.json()["slot_ids"][0]
 
-        # 2. Xóa slot
+        # 2. delete slot
         res_del = client.delete(f"/events/slots/{slot_id}", headers=headers)
         assert res_del.status_code == 200
 
@@ -363,7 +363,7 @@ class TestEvents:
     def test_get_upcoming_events(self, organizer_auth):
         """✓ Get upcoming events"""
         org_client, org_headers, _ = organizer_auth
-        # Tạo event tương lai
+        # creaet upcoming events
         org_client.post("/events/", json={
             "title": "Future Event", "description": "...", "location": "...",
             "slots": [{"work_date": str(date.today() + timedelta(days=10)), "starts_at": "08:00:00", "ends_at": "12:00:00", "capacity": 5, "day_reward": 1}]
@@ -372,7 +372,7 @@ class TestEvents:
         res = org_client.get("/events/upcoming")
         assert res.status_code == 200
         assert isinstance(res.json(), list)
-        # Check logic: phải có ít nhất 1 event vừa tạo
+        # Check logic to get at least the latest event which is just created 
         assert any(e["title"] == "Future Event" for e in res.json())
 
     def test_get_own_events(self, organizer_auth):
@@ -391,14 +391,14 @@ class TestEvents:
     def test_get_slot_detail(self, organizer_auth):
         """✓ User gets slot detail"""
         org_client, org_headers, _ = organizer_auth
-        # Tạo event
+        # create event
         create_res = org_client.post("/events/", json={
             "title": "Slot Detail Test", "description": "...", "location": "...",
             "slots": [{"work_date": str(date.today()), "starts_at": "08:00:00", "ends_at": "12:00:00", "capacity": 5, "day_reward": 1}]
         }, headers=org_headers)
         slot_id = create_res.json()["slot_ids"][0]
 
-        # Xem chi tiết slot
+        # get slot detail
         res = org_client.get(f"/events/slots/{slot_id}")
         assert res.status_code == 200
         assert res.json()["capacity"] == 5
