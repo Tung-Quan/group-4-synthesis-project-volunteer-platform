@@ -6,20 +6,20 @@ function AttendVolunteer({ volunteer }) {
 	const { activityId, slotId } = useParams();
 
  	const handleAttendance = async (attend) => {
-		const markAttendance = {
-			slot_id: slotId,
-			student_user_id: volunteer.student_no,
-			attended: attend
-		};
+    try {
+      const markAttendance = {
+        slot_id: slotId,
+        student_user_id: volunteer.student_no,
+        attended: attend
+      }
 
-		try {
-            const response = await apiClient.patch(`/applications/${activityId}/attendance`, markAttendance);
-            alert(`${volunteer.student_name} - ${volunteer.student_no} ${attend ? 'có mặt' : 'vắng'}.`);
-        } catch (err) {
-            console.error("Sending review failed:", err);
-            alert(`Lỗi: ${err.response?.data?.detail || 'Không thể cập nhật trạng thái hồ sơ.'}`);
-        }
-    };
+      const response = await apiClient.patch(`/applications/${activityId}/attendance`, markAttendance);
+      alert(`${volunteer.student_name} - ${volunteer.student_no} ${attend ? 'có mặt' : 'vắng'}.`);
+    } catch (err) {
+      console.error("Taking attendance failed:", err);
+      alert(`Lỗi: ${err.response?.data?.detail || 'Không thể gửi yêu cầu điểm danh.'}`);
+    }
+  };
 
   return (
     <div className="py-4 border-b border-gray-200 flex items-center justify-between">
@@ -33,7 +33,7 @@ function AttendVolunteer({ volunteer }) {
       {/* the buttons are sticking together but that'll do for now */}
       <div className="flex items-right">
       <button 
-        onClick={() => {handleAttendance(true)}}
+        onClick={() => handleAttendance(true)}
         className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-1.5 px-4 rounded-full shadow-md transition-colors duration-200"
       >
         Có mặt

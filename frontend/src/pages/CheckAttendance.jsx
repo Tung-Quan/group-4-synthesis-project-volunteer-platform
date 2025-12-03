@@ -19,12 +19,18 @@ function CheckAttendance() {
     const fetchApplicationInSlot = async () => {
       try {
         setIsLoading(true);
-        const response = await apiClient.get(`/applications/${activityId}/${slotId}`);
-		const eventInfo = await apiClient.get(`/events/${activityId}`);
-		const slotInfo = await apiClient.get(`/events/slots/${slotId}`);
-        setApplications(response.data);
-		setActivity(eventInfo.data);
-		setSlot(slotInfo.data);
+        // Dùng Promise.all để gọi song song
+        const [appRes, eventRes, slotRes] = await Promise.all([
+            apiClient.get(`/applications/${activityId}/slots/${slotId}`), 
+            apiClient.get(`/events/${activityId}`),
+            apiClient.get(`/events/slots/${slotId}`)
+        ]);
+
+        const validApps = appRes.data.filter(s => s.status === "approved");
+        setApplications(validApps);
+        
+		setActivity(eventRes.data);
+		setSlot(slotRes.data);
       } catch (err) {
         if (err.response?.status === 404) {
           setApplications([]);
@@ -62,7 +68,7 @@ function CheckAttendance() {
 		    <h2 className="text-2xl font-serif font-bold text-center text-gray-700 my-4">
           CA NGÀY {new Date(slot.work_date).toLocaleDateString('vi-VN', {
                   day: '2-digit', month: '2-digit', year: 'numeric'
-                })} TỪ {slot.starts_at} ĐẾN {slot.ends_at}
+                })} TỪ {slot.starts_at?.substring(0, 5)} ĐẾN {slot.ends_at?.substring(0, 5)}
         </h2>
 
 		<div className="bg-white p-6 rounded-lg shadow-md">

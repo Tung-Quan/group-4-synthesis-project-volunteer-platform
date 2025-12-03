@@ -69,16 +69,14 @@ function SeeAppInSlotPage() {
           DANH SÁCH ĐĂNG KÝ: {activity.title}
         </h1>
 		<h2 className="text-2xl font-serif font-bold text-center text-gray-700 my-4">
-          CA NGÀY {slot.work_date} TỪ {slot.starts_at?.substring(0, 5)} ĐẾN {slot.ends_at?.substring(0, 5)}
+          CA NGÀY {new Date(slot.work_date).toLocaleDateString('vi-VN', {
+                  day: '2-digit', month: '2-digit', year: 'numeric'
+                })} TỪ {slot.starts_at?.substring(0, 5)} ĐẾN {slot.ends_at?.substring(0, 5)}
         </h2>
 
 		<div className="bg-white p-6 rounded-lg shadow-md">
-      {/*
-        react.js freaks out when trying to preprocess earlier
-        also still gives no data when empty response
-      */}
-			{applications.filter(a => (a.status === "applied")).length > 0 ? (
-				applications.filter(a => (a.status === "applied")).map(a => <ApplicationListItem key={a.student_no} application={a}/>)
+			{applications.length > 0 ? (
+				applications.map(a => <ApplicationListItem key={a.student_no} application={a}/>)
 			) : (
 			<p className="text-center text-gray-500">Hiện ca này không có đơn nào chờ duyệt.</p>
 			)}
