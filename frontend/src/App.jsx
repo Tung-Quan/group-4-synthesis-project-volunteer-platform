@@ -20,6 +20,7 @@ import SeeAppOfEventPage from './pages/SeeAppOfEventPage';
 import CreateNewActivityPage from './pages/CreateNewActivityPage';
 import SeeAppInSlotPage from './pages/SeeAppInSlotPage';
 import ActivityEditor from './pages/ActivityEditor';
+import CheckAttendance from './pages/CheckAttendance';
 
 // Import Helpers
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -86,6 +87,14 @@ function App() {
           } 
         />
         <Route 
+          path="organizer/activities/new" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
+              <CreateNewActivityPage user={user}/>
+            </ProtectedRoute>
+          }
+        />
+        <Route 
           path="organizer/dashboard/:activityId" 
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
@@ -105,7 +114,15 @@ function App() {
           path="organizer/dashboard/:activityId/edit" 
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
-              <ActivityEditor user={user}/>
+              <ActivityEditor user={user} />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="organizer/dashboard/:activityId/:slotId/attendance" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
+              <CheckAttendance user={user} />
             </ProtectedRoute>
           }
         />
