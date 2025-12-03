@@ -20,11 +20,11 @@ function SeeAppInSlotPage() {
       try {
         setIsLoading(true);
         const response = await apiClient.get(`/applications/${activityId}/${slotId}`);
-		const eventInfo = await apiClient.get(`/events/${activityId}`);
-		const slotInfo = await apiClient.get(`/events/slots/${slotId}`);
+		    const eventInfo = await apiClient.get(`/events/${activityId}`);
+		    const slotInfo = await apiClient.get(`/events/slots/${slotId}`);
         setApplications(response.data);
-		setActivity(eventInfo.data);
-		setSlot(slotInfo.data);
+		    setActivity(eventInfo.data);
+		    setSlot(slotInfo.data);
       } catch (err) {
         if (err.response?.status === 404) {
           setApplications([]);
@@ -42,10 +42,10 @@ function SeeAppInSlotPage() {
   	}, [activityId, slotId]);
 
   	if (isLoading) return <div className="text-center p-4">Đang tải các hồ sơ...</div>;
-	if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
+	  if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
+    
+    console.log(slot);
 
-	setApplications(applications.filter(s => (s.status === "applied")))
-	
   	return (
 		<>
 		<div className="mb-4">
@@ -58,16 +58,22 @@ function SeeAppInSlotPage() {
           </button>
         </div>
 
-		<h1 className="text-3xl font-serif font-bold text-center text-gray-800 my-6">
+		    <h1 className="text-3xl font-serif font-bold text-center text-gray-800 my-6">
           DANH SÁCH ĐĂNG KÝ {activity.title}
         </h1>
-		<h2 className="text-2xl font-serif font-bold text-center text-gray-700 my-4">
-          CA NGÀY {slot.work_date} TỪ {slot.starts_at} ĐẾN {slot.ends_at}
+		    <h2 className="text-2xl font-serif font-bold text-center text-gray-700 my-4">
+          CA NGÀY {new Date(slot.work_date).toLocaleDateString('vi-VN', {
+                  day: '2-digit', month: '2-digit', year: 'numeric'
+                })} TỪ {slot.starts_at} ĐẾN {slot.ends_at}
         </h2>
 
 		<div className="bg-white p-6 rounded-lg shadow-md">
-			{applications.length > 0 ? (
-			applications.map(a => <ApplicationListItem key={a.student_no} application={a}/>)
+      {/*
+        react.js freaks out when trying to preprocess earlier
+        also still gives no data when empty response
+      */}
+			{applications.filter(s => (s.status === "applied")).length > 0 ? (
+				applications.filter(s => (s.status === "applied")).map(a => <ApplicationListItem key={a.student_no} application={a}/>)
 			) : (
 			<p className="text-center text-gray-500">Hiện ca này không có đơn nào chờ duyệt.</p>
 			)}

@@ -1,18 +1,19 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 
-function ApplicationReviewModal({ isOpen, onClose, approved, slotId, stuNo, onSave }) {
+function ApplicationReviewModal({ isOpen, onClose, approved, slotId, stuId, onSave }) {
 	const [note, setNote] = useState('');
 	useEffect(() => {setNote('')}, [setNote]);
 
 	if (!isOpen) return null;
 
+	//approved is a bool
 	const handleSave = () => {
 		onSave({
 			slot_id: slotId,
-			student_user_id: stuNo,
-			note: note,
-			status: approved //this is a bool
+			student_user_id: stuId,
+			reason: note,
+			approve: approved
 		});
 	};
 
@@ -26,7 +27,7 @@ function ApplicationReviewModal({ isOpen, onClose, approved, slotId, stuNo, onSa
 				onClick={e => e.stopPropagation()}
 			>
 				<div className="flex justify-between items-center p-4 border-b border-gray-300">
-					<h2 className="text-xl font-bold text-gray-800">Nhập lí do</h2>
+					<h2 className="text-xl font-bold text-gray-800">Nhập lí do (có thể bỏ trống)</h2>
 					<button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
 				</div>
 				<div className="p-6 space-y-4">

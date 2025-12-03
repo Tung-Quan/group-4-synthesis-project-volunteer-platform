@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import apiClient from "../../api/apiClient";
 import ApplicationReviewModal from "./ApplicationReviewModal";
+import { useAuth } from "../../context/AuthContext";
 
 function ApplicationListItem({ application }) {
 	const { activityId, slotId } = useParams();
+  const { user, setUser } = useAuth();
 
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [approved, setApproved] = useState(false);
@@ -40,24 +42,28 @@ function ApplicationListItem({ application }) {
         </div>
       </div>
 
+      {/* the buttons are sticking together but that'll do for now */}
+      <div className="flex items-right">
       <button 
         onClick={() => {setIsEditModalOpen(true); setApproved(true)}}
         className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-1.5 px-4 rounded-full shadow-md transition-colors duration-200"
       >
         Đồng ý
       </button>
-	  <button 
+	    <button 
         onClick={() => {setIsEditModalOpen(true); setApproved(false)}}
         className="bg-red-500 hover:bg-red-600 text-white font-bold text-sm py-1.5 px-4 rounded-full shadow-md transition-colors duration-200"
       >
         Từ chối
       </button>
-      
+      </div>
+    
+    {/* missing CSRF token but how??? */}
 	  <ApplicationReviewModal
 		isOpen={isEditModalOpen}
 		onClose={() => setIsEditModalOpen(false)}
 		slotId={slotId}
-		stuNo={application.student_no}
+		stuId={application.student_no}
 		approved={approved}
 		onSave={approved ? handleAccept : handleReject}
 	  />
