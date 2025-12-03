@@ -4,6 +4,7 @@ from ..db.database import db
 from fastapi import Request
 from ..dependencies import verify_csrf
 import json
+from fastapi import HTTPException, status
 
 
 def apply_event(request, student_user_id):
@@ -322,6 +323,15 @@ def get_application_details(slot_id, student_user_id):
     return results
 
 def get_application_by_slotId(event_id, slot_id):
+    check_exist = """
+        SELECT id, event_id
+        FROM event_slots
+        WHERE event_id = %s AND id = %s;
+        """
+    rows = db.execute_query_sync(check_exist, (event_id, slot_id))
+    if not rows:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    
     query = """
         SELECT
             u.full_name AS student_name,
@@ -336,5 +346,5 @@ def get_application_by_slotId(event_id, slot_id):
     
     results = db.execute_query_sync(query, (event_id, slot_id))
     if not results:
-        return None
+        return []
     return results
