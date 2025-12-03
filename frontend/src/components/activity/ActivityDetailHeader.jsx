@@ -10,9 +10,7 @@ function ActivityDetailHeader({ activity, onRegisterClick, userType, onCancelCli
       return null;
     }
 
-    // Dựa vào prop `applicationStatus` để quyết định
     switch (applicationStatus) {
-      // TRẠNG THÁI: CHỜ DUYỆT
       case 'applied':
         return (
           <div className="flex items-center space-x-3">
@@ -28,7 +26,6 @@ function ActivityDetailHeader({ activity, onRegisterClick, userType, onCancelCli
           </div>
         );
 
-      // TRẠNG THÁI: ĐÃ ĐƯỢC DUYỆT
       case 'approved':
         return (
           <div className="bg-green-100 text-green-800 font-bold py-2 px-6 rounded-lg cursor-default">
@@ -36,7 +33,6 @@ function ActivityDetailHeader({ activity, onRegisterClick, userType, onCancelCli
           </div>
         );
 
-      // TRẠNG THÁI: ĐÃ THAM GIA (hoặc vắng mặt, đã hoàn thành)
       case 'attended':
       case 'absent':
         return (
@@ -45,7 +41,6 @@ function ActivityDetailHeader({ activity, onRegisterClick, userType, onCancelCli
           </div>
         );
 
-      // TRẠNG THÁI: BỊ TỪ CHỐI (hoặc đã hủy)
       case 'rejected':
       case 'withdrawn':
         return (
@@ -54,7 +49,6 @@ function ActivityDetailHeader({ activity, onRegisterClick, userType, onCancelCli
           </div>
         );
 
-      // TRƯỜNG HỢP MẶC ĐỊNH: Chưa đăng ký (status là null hoặc undefined)
       default:
         return (
           <button

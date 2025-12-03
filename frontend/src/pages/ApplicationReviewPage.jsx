@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 
 //Make it show events and their shifts, then shows the applications when selecting a shift (slot)
-//The API call is '/applications/{event_id}/{slot_id}'
+//The API call is '/applications/{event_id}/slots/{slot_id}'
 //Select in order: Event -> Slot -> Applications
 function ApplicationReviewPage() {
     const navigate = useNavigate();

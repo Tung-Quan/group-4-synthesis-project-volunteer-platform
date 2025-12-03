@@ -19,21 +19,25 @@ function SeeAppInSlotPage() {
     const fetchApplicationInSlot = async () => {
       try {
         setIsLoading(true);
-        const response = await apiClient.get(`/applications/${activityId}/${slotId}`);
-		    const eventInfo = await apiClient.get(`/events/${activityId}`);
-		    const slotInfo = await apiClient.get(`/events/slots/${slotId}`);
-        setApplications(response.data);
-		    setActivity(eventInfo.data);
-		    setSlot(slotInfo.data);
+        
+        // Dùng Promise.all để gọi song song
+        const [appRes, eventRes, slotRes] = await Promise.all([
+            apiClient.get(`/applications/${activityId}/slots/${slotId}`), 
+            apiClient.get(`/events/${activityId}`),
+            apiClient.get(`/events/slots/${slotId}`)
+        ]);
+
+        // ọc dữ liệu NGAY LÚC LẤY VỀ 
+        const validApps = appRes.data.filter(s => s.status === "applied");
+        setApplications(validApps);
+        
+		setActivity(eventRes.data);
+		setSlot(slotRes.data);
+
       } catch (err) {
-        if (err.response?.status === 404) {
-          setApplications([]);
-		  setActivity([]);
-		  setSlot([]);
-        } else {
-          setError("Không thể tải các hồ sơ được gửi về. Vui lòng thử lại.");
-        }
+        // thông báo nếu có lỗi 404 xảy ra (không có event/slot này) 
         console.error(err);
+        setError("Có lỗi xảy ra hoặc không tìm thấy dữ liệu.");
       } finally {
         setIsLoading(false);
       }
@@ -43,6 +47,11 @@ function SeeAppInSlotPage() {
 
   	if (isLoading) return <div className="text-center p-4">Đang tải các hồ sơ...</div>;
 	  if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
+
+    // kiểm tra dữ liệu null trước khi render để tránh crash "Cannot read properties of null"
+    if (!activity || !slot) {
+        return <div className="text-center p-4 text-gray-500">Không tìm thấy thông tin hoạt động hoặc ca này.</div>;
+    }
 
   	return (
 		<>
@@ -56,13 +65,11 @@ function SeeAppInSlotPage() {
           </button>
         </div>
 
-		    <h1 className="text-3xl font-serif font-bold text-center text-gray-800 my-6">
-          DANH SÁCH ĐĂNG KÝ {activity.title}
+		<h1 className="text-3xl font-serif font-bold text-center text-gray-800 my-6">
+          DANH SÁCH ĐĂNG KÝ: {activity.title}
         </h1>
-		    <h2 className="text-2xl font-serif font-bold text-center text-gray-700 my-4">
-          CA NGÀY {new Date(slot.work_date).toLocaleDateString('vi-VN', {
-                  day: '2-digit', month: '2-digit', year: 'numeric'
-                })} TỪ {slot.starts_at} ĐẾN {slot.ends_at}
+		<h2 className="text-2xl font-serif font-bold text-center text-gray-700 my-4">
+          CA NGÀY {slot.work_date} TỪ {slot.starts_at?.substring(0, 5)} ĐẾN {slot.ends_at?.substring(0, 5)}
         </h2>
 
 		<div className="bg-white p-6 rounded-lg shadow-md">

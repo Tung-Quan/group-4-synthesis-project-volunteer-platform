@@ -40,28 +40,27 @@ function ApplicationListItem({ application }) {
         </div>
       </div>
 
-      {/* the buttons are sticking together but that'll do for now */}
-      <div className="flex items-right">
-      <button 
-        onClick={() => {setIsEditModalOpen(true); setApproved(true)}}
-        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-1.5 px-4 rounded-full shadow-md transition-colors duration-200"
-      >
-        Đồng ý
-      </button>
-	    <button 
-        onClick={() => {setIsEditModalOpen(true); setApproved(false)}}
-        className="bg-red-500 hover:bg-red-600 text-white font-bold text-sm py-1.5 px-4 rounded-full shadow-md transition-colors duration-200"
-      >
-        Từ chối
-      </button>
+      <div className="flex items-center space-x-2 flex-shrink-0 ">
+        <button 
+          onClick={() => {setIsEditModalOpen(true); setApproved(true)}}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-1.5 px-4 rounded-full shadow-md transition-colors duration-200"
+        >
+          Đồng ý
+        </button>
+        <button 
+          onClick={() => {setIsEditModalOpen(true); setApproved(false)}}
+          className="bg-red-500 hover:bg-red-600 text-white font-bold text-sm py-1.5 px-4 rounded-full shadow-md transition-colors duration-200"
+        >
+          Từ chối
+        </button>
       </div>
-    
-    {/* missing CSRF token but how??? */}
+      
+      
 	  <ApplicationReviewModal
 		isOpen={isEditModalOpen}
 		onClose={() => setIsEditModalOpen(false)}
 		slotId={slotId}
-		stuId={application.student_no}
+		student_user_id={application.student_user_id}
 		approved={approved}
 		onSave={approved ? handleAccept : handleReject}
 	  />
