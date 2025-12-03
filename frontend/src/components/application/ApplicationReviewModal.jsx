@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 
-function ApplicationReviewModal({ isOpen, onClose, approved, slotId, stuNo, onSave }) {
+function ApplicationReviewModal({ isOpen, onClose, approved, slotId, student_user_id, onSave }) {
 	const [note, setNote] = useState('');
 	useEffect(() => {setNote('')}, [setNote]);
 
@@ -10,9 +10,9 @@ function ApplicationReviewModal({ isOpen, onClose, approved, slotId, stuNo, onSa
 	const handleSave = () => {
 		onSave({
 			slot_id: slotId,
-			student_user_id: stuNo,
-			note: note,
-			status: approved //this is a bool
+			student_user_id: student_user_id,
+			approve: approved, //this is a bool
+			reason: note
 		});
 	};
 

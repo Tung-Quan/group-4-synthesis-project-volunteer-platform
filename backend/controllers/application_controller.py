@@ -343,6 +343,7 @@ def get_application_by_slotId(event_id, slot_id):
     
     query = """
         SELECT
+            a.student_user_id,
             u.full_name AS student_name,
             s.student_no,
             a.note,

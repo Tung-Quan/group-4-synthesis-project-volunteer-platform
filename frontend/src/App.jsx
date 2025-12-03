@@ -109,7 +109,7 @@ function App() {
           } 
         />
         <Route 
-          path="organizer/applications/:activityId/slots/:slotId" 
+          path="organizer/applications/:activityId/:slotId" 
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
               <SeeAppInSlotPage user={user} />

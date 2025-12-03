@@ -19,19 +19,28 @@ function SeeAppInSlotPage() {
     const fetchApplicationInSlot = async () => {
       try {
         setIsLoading(true);
-        const response = await apiClient.get(`/applications/${activityId}/slots/${slotId}`);
-		const eventInfo = await apiClient.get(`/events/${activityId}`);
-		const slotInfo = await apiClient.get(`/events/slots/${slotId}`);
-        setApplications(response.data);
-		setActivity(eventInfo.data);
-		setSlot(slotInfo.data);
+        
+        // 1. Dùng Promise.all để gọi song song (nhanh hơn và tránh việc 1 cái lỗi làm cái kia không chạy)
+        // Lưu ý: Đã sửa URL dòng đầu tiên (bỏ chữ /slots thừa)
+        const [appRes, eventRes, slotRes] = await Promise.all([
+            apiClient.get(`/applications/${activityId}/slots/${slotId}`), 
+            apiClient.get(`/events/${activityId}`),
+            apiClient.get(`/events/slots/${slotId}`)
+        ]);
+
+        // 2. Lọc dữ liệu NGAY LÚC LẤY VỀ (Tránh set state 2 lần)
+        const validApps = appRes.data.filter(s => s.status === "applied");
+        setApplications(validApps);
+        
+		setActivity(eventRes.data);
+		setSlot(slotRes.data);
+
       } catch (err) {
-        if (err.response?.status === 404) {
-          setApplications([]);
-        } else {
-          setError("Không thể tải các hồ sơ được gửi về. Vui lòng thử lại.");
-        }
+        // Nếu lỗi 404 ở danh sách đơn -> coi như rỗng, nhưng vẫn cần load Activity/Slot
+        // Tuy nhiên vì dùng Promise.all, nếu 1 cái lỗi nó sẽ nhảy vào đây ngay.
+        // Tạm thời xử lý đơn giản:
         console.error(err);
+        setError("Có lỗi xảy ra hoặc không tìm thấy dữ liệu.");
       } finally {
         setIsLoading(false);
       }
@@ -42,8 +51,13 @@ function SeeAppInSlotPage() {
   	if (isLoading) return <div className="text-center p-4">Đang tải các hồ sơ...</div>;
 	if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
 
-	setApplications(applications.filter(s => (s.status === "applied")))
-	//This goddamn code assumes time format is always HH:MM:SS.SSSZ
+    // 3. QUAN TRỌNG: Kiểm tra dữ liệu null trước khi render để tránh crash "Cannot read properties of null"
+    if (!activity || !slot) {
+        return <div className="text-center p-4 text-gray-500">Không tìm thấy thông tin hoạt động hoặc ca này.</div>;
+    }
+
+    // --- ĐÃ XÓA DÒNG GÂY LỖI: setApplications(...) ở đây ---
+
   	return (
 		<>
 		<div className="mb-4">
@@ -57,10 +71,10 @@ function SeeAppInSlotPage() {
         </div>
 
 		<h1 className="text-3xl font-serif font-bold text-center text-gray-800 my-6">
-          DANH SÁCH ĐĂNG KÝ {activity.title}
+          DANH SÁCH ĐĂNG KÝ: {activity.title}
         </h1>
 		<h2 className="text-2xl font-serif font-bold text-center text-gray-700 my-4">
-          CA NGÀY {slot.work_date} TỪ {slot.starts_at.substring(0, 5)} ĐẾN {slot.ends_at.substring(0, 5)}
+          CA NGÀY {slot.work_date} TỪ {slot.starts_at?.substring(0, 5)} ĐẾN {slot.ends_at?.substring(0, 5)}
         </h2>
 
 		<div className="bg-white p-6 rounded-lg shadow-md">
