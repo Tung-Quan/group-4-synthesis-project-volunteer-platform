@@ -27,7 +27,7 @@ function SeeAppInSlotPage() {
             apiClient.get(`/events/slots/${slotId}`)
         ]);
 
-        // 2. Lọc dữ liệu NGAY LÚC LẤY VỀ (Tránh set state 2 lần)
+        // ọc dữ liệu NGAY LÚC LẤY VỀ 
         const validApps = appRes.data.filter(s => s.status === "applied");
         setApplications(validApps);
         
@@ -35,9 +35,7 @@ function SeeAppInSlotPage() {
 		setSlot(slotRes.data);
 
       } catch (err) {
-        // Nếu lỗi 404 ở danh sách đơn -> coi như rỗng, nhưng vẫn cần load Activity/Slot
-        // Tuy nhiên vì dùng Promise.all, nếu 1 cái lỗi nó sẽ nhảy vào đây ngay.
-        // Tạm thời xử lý đơn giản:
+        // thông báo nếu có lỗi 404 xảy ra (không có event/slot này) 
         console.error(err);
         setError("Có lỗi xảy ra hoặc không tìm thấy dữ liệu.");
       } finally {
@@ -52,12 +50,10 @@ function SeeAppInSlotPage() {
     
     console.log(slot);
 
-    // 3. QUAN TRỌNG: Kiểm tra dữ liệu null trước khi render để tránh crash "Cannot read properties of null"
+    // kiểm tra dữ liệu null trước khi render để tránh crash "Cannot read properties of null"
     if (!activity || !slot) {
         return <div className="text-center p-4 text-gray-500">Không tìm thấy thông tin hoạt động hoặc ca này.</div>;
     }
-
-    // --- ĐÃ XÓA DÒNG GÂY LỖI: setApplications(...) ở đây ---
 
   	return (
 		<>
