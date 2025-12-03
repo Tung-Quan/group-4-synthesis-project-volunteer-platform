@@ -17,7 +17,6 @@ import ActivityDashboard from './pages/ActivityDashboard';
 import ActivityDetailDashboard from './pages/ActivityDetailDashboard';
 import ApplicationReviewPage from './pages/ApplicationReviewPage';
 import ApplicationDetailPage from './pages/ApplicationDetailPage';
-import CreateNewActivityPage from './pages/CreateNewActivityPage';
 
 // Import Helpers
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -37,11 +36,9 @@ function App() {
 
   return (
     <Routes>
-      {/* === PUBLIC ROUTES (không dùng layout) === */}
       <Route path="/guest" element={<HomePageLoggedOut navigateTo={navigate} />} />
       <Route path="/login" element={<LoginPage />} />
 
-      {/* === PRIVATE ROUTES (sử dụng layout và được bảo vệ) === */}
       <Route 
         path="/" 
         element={
@@ -51,19 +48,15 @@ function App() {
           </ProtectedRoute>
         }
       >
-        {/* 2. Các route con (nested) sẽ được render bên trong <Outlet /> của MainLayout */}
         
-        {/* Route mặc định (trang chủ) */}
         <Route index element={<HomePageLoggedIn />} />
 
-        {/* --- Routes chung --- */}
         <Route path="search" element={<SearchResultsPage />} />
         <Route path="profile" element={<ProfilePage user={user} setUser={setUser} />} />
         <Route path="activities/new" element={<NewActivitiesPage />} />
         <Route path="activities/current" element={<CurrentActivitiesPage />} />
         <Route path="activities/:activityId" element={<ActivityDetailPage user={user} />} />
 
-        {/* --- Routes của Volunteer --- */}
         <Route 
           path="participating" 
           element={
@@ -81,20 +74,11 @@ function App() {
           } 
         />
 
-        {/* --- Routes của Organizer --- */}
         <Route 
           path="organizer/dashboard" 
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
               <ActivityDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="organizer/activities/new" 
-          element={
-            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
-              <CreateNewActivityPage />
             </ProtectedRoute>
           } 
         />

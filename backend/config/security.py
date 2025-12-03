@@ -2,7 +2,7 @@ import bcrypt
 import jwt
 import secrets
 from .env import env_settings
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, UTC
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -19,7 +19,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None, toke
     jwt_secret, jwt_algo, access_token_expire_minutes, _, _ = env_settings.get_jwt_secret()
 
     # Use UTC times
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     if expires_delta:
         expire = now + expires_delta
     else:

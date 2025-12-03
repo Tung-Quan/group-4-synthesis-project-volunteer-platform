@@ -17,8 +17,7 @@ function ActivityDetailPage() {
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // TODO: Cần một API để lấy trạng thái đăng ký của user cho hoạt động này
-  const userApplicationStatus = null; // Tạm thời để là null
+  const userApplicationStatus = null; 
 
   const fetchActivityData = useCallback(async () => {
     if (!activityId) return;
@@ -26,49 +25,31 @@ function ActivityDetailPage() {
       setIsLoading(true);
       setError(null);
 
-      // ======================================================
-      // === BƯỚC 1: LẤY THÔNG TIN SỰ KIỆN CƠ BẢN ===
-      // ======================================================
       const eventResponse = await apiClient.get(`/events/${activityId}`);
       const basicEventData = eventResponse.data;
 
       if (!basicEventData.slots || basicEventData.slots.length === 0) {
-        // Nếu không có slot, không cần làm gì thêm
         setActivity(basicEventData);
         return;
       }
 
-      // ====================================================================
-      // === BƯỚC 2: GỌI API CHI TIẾT CHO TỪNG SLOT ĐỂ LẤY SỐ LƯỢNG ĐĂNG KÝ ===
-      // ====================================================================
       const slotDetailPromises = basicEventData.slots.map(slot =>
         apiClient.get(`/events/slots/${slot.slot_id}`)
       );
       
-      // Chờ tất cả các request lấy chi tiết slot hoàn thành
       const slotDetailResponses = await Promise.all(slotDetailPromises);
-      
-      // Trích xuất dữ liệu từ các response
       const slotsWithDetails = slotDetailResponses.map(res => res.data);
-
-      // ======================================================
-      // === BƯỚC 3: HỢP NHẤT DỮ LIỆU ===
-      // ======================================================
-      // Tạo một map để dễ dàng truy cập chi tiết slot bằng slot_id
       const slotDetailsMap = new Map(slotsWithDetails.map(slot => [slot.id, slot]));
       
-      // Cập nhật lại mảng slots trong dữ liệu sự kiện ban đầu
       const enrichedSlots = basicEventData.slots.map(basicSlot => {
         const details = slotDetailsMap.get(basicSlot.slot_id);
         return {
           ...basicSlot,
-          // Lấy approved_count và applied_count từ dữ liệu chi tiết
           approved_count: details ? details.approved_count : 0,
           applied_count: details ? details.applied_count : 0,
         };
       });
 
-      // Tạo object activity cuối cùng đã được "làm giàu"
       const enrichedEventData = {
         ...basicEventData,
         slots: enrichedSlots,
@@ -82,7 +63,7 @@ function ActivityDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activityId]); // Dependency là activityId
+  }, [activityId]);
 
   useEffect(() => {
     fetchActivityData();

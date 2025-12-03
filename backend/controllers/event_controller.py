@@ -127,7 +127,8 @@ def create_event(request, organizer_id):
             db.connection.rollback()
             return None
         
-        event_id = res[0]
+        # event_id = res[0]
+        event_id = res['id']
 
         slot_query = """
                     INSERT INTO event_slots (event_id, work_date, starts_at, ends_at, capacity, day_reward)
@@ -147,7 +148,8 @@ def create_event(request, organizer_id):
             row = db.cursor.fetchone()
             if row is None:
                 raise Exception("Failed to insert slot")
-            slot_ids = row[0]
+            # slot_ids = row[0]
+            slot_ids.append(row['id'])
         
         db.connection.commit()
         return {"event_id": event_id, "slot_ids": slot_ids}

@@ -4,7 +4,6 @@ function AboutAndCTASection({ navigateTo }) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row items-center justify-between gap-12">
       
-      {/*About Us */}
       <div className="w-full md:w-3/5">
         <p className="font-serif text-base md:text-lg text-gray-700 leading-relaxed">
           Xin chào các chiến binh Bách Khoa! Bạn đang tìm kiếm những hoạt động công tác xã hội "chất lừ"? Bạn muốn đóng góp sức trẻ cho cộng đồng nhưng chưa biết bắt đầu từ đâu? Bach Khoa Volunteer Hub chính là nơi dành cho bạn!
@@ -17,7 +16,6 @@ function AboutAndCTASection({ navigateTo }) {
         </p>
       </div>
 
-      {/* Call to Action */}
       <div className="w-full md:w-auto flex justify-center md:justify-end">
         <div className="border-2 border-dashed border-gray-400 rounded-lg p-6 text-center">
           <p className="text-base font-medium text-gray-700 mb-2">SẴN SÀNG TẠO KHÁC BIỆT CHƯA</p>

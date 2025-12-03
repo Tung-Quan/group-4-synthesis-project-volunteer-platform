@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-// Component con cho từng ca
 const ShiftListItem = ({ shift, onSelect, isSelected }) => {
     const isFull = shift.registered >= shift.capacity;
     const today = new Date();
@@ -10,7 +9,6 @@ const ShiftListItem = ({ shift, onSelect, isSelected }) => {
     const isPastDate = workDate < today;
     const isDisabled = isFull || isPastDate;
 
-    // Xác định nội dung của nút
     let buttonText = 'Chọn ca này';
     if (isFull) buttonText = 'Đã đầy';
     if (isPastDate) buttonText = 'Đã quá hạn';
@@ -52,7 +50,6 @@ function ShiftsModal({ isOpen, onClose, shifts = [], onRegisterShift, activityTi
     if (!isOpen) return null;
 
     const handleSelectShift = (shiftId) => {
-        // Nếu bấm lại ca đang chọn, bỏ chọn nó. Ngược lại, chọn ca mới.
         const selectedShift = shifts.find(s => s.id === shiftId);
         
         const today = new Date();
@@ -60,7 +57,6 @@ function ShiftsModal({ isOpen, onClose, shifts = [], onRegisterShift, activityTi
         const workDate = new Date(selectedShift.work_date);
         workDate.setMinutes(workDate.getMinutes() + workDate.getTimezoneOffset());
 
-        // Không cho phép chọn ca đã quá hạn
         if (workDate < today) {
             return;
         }
@@ -72,12 +68,10 @@ function ShiftsModal({ isOpen, onClose, shifts = [], onRegisterShift, activityTi
             alert("Vui lòng chọn một ca làm việc.");
             return;
         }
-        // Gọi hàm onRegisterShift từ cha với cả shiftId và note
         onRegisterShift(selectedShiftId, note);
     };
 
     const handleClose = () => {
-        // Reset state khi đóng modal
         setSelectedShiftId(null);
         setNote('');
         onClose();
@@ -94,7 +88,6 @@ function ShiftsModal({ isOpen, onClose, shifts = [], onRegisterShift, activityTi
                     <button onClick={handleClose} className="text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
                 </div>
 
-                {/* Danh sách các ca */}
                 <div className="overflow-y-auto">
                     {shifts.length > 0 ? (
                         shifts.map(shift => (
@@ -110,8 +103,6 @@ function ShiftsModal({ isOpen, onClose, shifts = [], onRegisterShift, activityTi
                     )}
                 </div>
 
-                {/* === PHẦN NHẬP GHI CHÚ VÀ XÁC NHẬN === */}
-                {/* Chỉ hiển thị khi đã có một ca được chọn */}
                 {selectedShiftId && (
                     <div className="p-4 border-t border-gray-200 bg-gray-50">
                         <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-2">
@@ -128,14 +119,12 @@ function ShiftsModal({ isOpen, onClose, shifts = [], onRegisterShift, activityTi
                     </div>
                 )}
 
-                {/* Footer của Modal */}
                 <div className="flex justify-end items-center p-4 border-t border-gray-300 space-x-3">
                     <button onClick={handleClose} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">
                         Hủy
                     </button>
                     <button
                         onClick={handleConfirmRegistration}
-                        // Nút này chỉ bật khi đã chọn một ca
                         disabled={!selectedShiftId}
                         className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-blue-300 disabled:cursor-not-allowed"
                     >

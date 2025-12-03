@@ -6,7 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from .auth import CSRFMiddleware
 from ..config.env import env_settings
 from ..config.logger import logger
-from datetime import datetime
+from datetime import datetime, UTC
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -23,7 +23,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # except Exception:
         #     # If the body cannot be read (e.g., streaming) just continue
         #     logger.debug("Could not read request body")
-        start = datetime.utcnow()
+        start = datetime.now(UTC)
         try:
             response = await call_next(request)
             response.headers.update({
@@ -37,7 +37,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             # Log exception with full stacktrace then re-raise so exception handlers still run
             logger.exception("Unhandled exception while handling request")
             raise
-        duration = (datetime.utcnow() - start).total_seconds()
+        duration = (datetime.now(UTC) - start).total_seconds()
         logger.info(
             f"Completed {request.method} {request.url} -> {response.status_code} in {duration:.3f}s")
         return response
@@ -48,9 +48,12 @@ def setup_middlewares(app: FastAPI):
     before any middleware that accesses request.session (CSRFMiddleware depends on it).
     """
     # CORS can be added first
+    origins = ["http://localhost:5173"]
+    if env_settings.API_ORIGIN:
+        origins.append(env_settings.API_ORIGIN)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173"],
+        allow_origins=origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-CSRF-Token"],

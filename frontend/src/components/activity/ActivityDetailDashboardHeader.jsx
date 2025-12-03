@@ -4,7 +4,7 @@ const CloverIcon = () => (
   <span className="text-green-500 text-lg mr-2">🍀</span>
 );
 
-function ActivityDetailDashboardHeader({ activity, onModifyClick, onDeleteClick }) {
+function ActivityDetailDashboardHeader({ activity, onModifyClick }) {
   return (
     <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
       
@@ -19,12 +19,12 @@ function ActivityDetailDashboardHeader({ activity, onModifyClick, onDeleteClick 
         >
           Chỉnh sửa
         </button>
-        <button 
+        {/*<button 
           onClick={onDeleteClick}
           className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-colors duration-200 whitespace-nowrap"
         >
           Xóa
-        </button>
+        </button>*/}
         </div>
       </div>
 
