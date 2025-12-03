@@ -19,7 +19,7 @@ function SeeAppInSlotPage() {
     const fetchApplicationInSlot = async () => {
       try {
         setIsLoading(true);
-        const response = await apiClient.get(`/applications/${activityId}/${slotId}`);
+        const response = await apiClient.get(`/applications/${activityId}/slots/${slotId}`);
 		const eventInfo = await apiClient.get(`/events/${activityId}`);
 		const slotInfo = await apiClient.get(`/events/slots/${slotId}`);
         setApplications(response.data);
