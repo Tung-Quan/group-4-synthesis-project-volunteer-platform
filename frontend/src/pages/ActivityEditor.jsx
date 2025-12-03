@@ -63,7 +63,6 @@ function ActivityEditor() {
         setError(null);
         const response = await apiClient.get(`/events/${activityId}`);
         setActivity(response.data);
-		console.log(response.data); //to debug
       } catch (err) {
         setError("Không thể tải thông tin hoạt động này.");
         console.error(`Error fetching activity ${activityId}:`, err);
@@ -73,8 +72,6 @@ function ActivityEditor() {
     };
     fetchActivityDetail();
   }, [activityId]);
-
-  const oldActivity = activity;
   
   // State cho thông tin chung của sự kiện
   const [eventData, setEventData] = useState({
@@ -171,21 +168,21 @@ function ActivityEditor() {
               <label className="block text-sm font-medium text-gray-700">Tên hoạt động</label>
               <input type="text" name="title" value={eventData.title} onChange={handleEventChange} required
 			  	className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-				placeholder={oldActivity.title}
+				placeholder={/*activity.title*/ ``}
 			  />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Mô tả</label>
               <textarea name="description" value={eventData.description} onChange={handleEventChange} required rows="4"
 			    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-				placeholder={oldActivity.description}	
+				placeholder={/*activity.description*/ ``}	
 			  />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Địa điểm chung</label>
               <input type="text" name="location" value={eventData.location} onChange={handleEventChange} required
 			    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-				placeholder={oldActivity.location}
+				placeholder={/*activity.location*/ ``}
 			  />
             </div>
           </div>

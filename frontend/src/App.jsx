@@ -87,6 +87,14 @@ function App() {
           } 
         />
         <Route 
+          path="organizer/activities/new" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
+              <CreateNewActivityPage user={user}/>
+            </ProtectedRoute>
+          }
+        />
+        <Route 
           path="organizer/dashboard/:activityId" 
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
