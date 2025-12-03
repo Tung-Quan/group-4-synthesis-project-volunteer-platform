@@ -19,6 +19,7 @@ import ApplicationReviewPage from './pages/ApplicationReviewPage';
 import SeeAppOfEventPage from './pages/SeeAppOfEventPage';
 import CreateNewActivityPage from './pages/CreateNewActivityPage';
 import SeeAppInSlotPage from './pages/SeeAppInSlotPage';
+import ActivityEditor from './pages/ActivityEditor';
 
 // Import Helpers
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -89,6 +90,14 @@ function App() {
           element={
             <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
               <ActivityDetailDashboard user={user}/>
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="organizer/dashboard/:activityId/edit" 
+          element={
+            <ProtectedRoute isLoggedIn={isLoggedIn} user={user} allowedRoles={['ORGANIZER']}>
+              <ActivityEditor user={user}/>
             </ProtectedRoute>
           }
         />
