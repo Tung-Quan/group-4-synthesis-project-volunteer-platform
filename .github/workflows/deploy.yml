@@ -83,10 +83,10 @@ jobs:
         # Truyền biến vào SSH session
         envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION,ECR_REPOSITORY_BACKEND,ECR_REPOSITORY_FRONTEND
         script: |
-          # 1. FIX LỖI DOCKER PERMISSION
+          # 1. DOCKER PERMISSION
           sudo chmod 666 /var/run/docker.sock
 
-          # 2. CẤP QUYỀN AWS
+          # 2. PROVIDE AWS KEY FOR ACCESS
           # export key for code below
           export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
           export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -95,34 +95,36 @@ jobs:
           # 3. Login ECR
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
           
-          # 4. Pull ảnh mới về
+          # 4. Pull NEW IMAGES
           docker pull ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:latest
           docker pull ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:latest
           
-          # 5. Tạo file docker-compose.prod.yaml trên server
+          # 5. CRREATE docker-compose.prod.yaml ON server
           cat <<EOF > docker-compose.prod.yaml
           services:
             backend:
               image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:latest
               ports: ["8000:8000"]
               env_file: .env
-              depends_on: [db]
+              # depends_on: [db]
             frontend:
               image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:latest
               ports: ["5173:5173"]
               environment:
                 - VITE_API_BASE_URL=http://${{ secrets.EC2_HOST }}:8000
-            db:
-              image: postgres:15-alpine
-              volumes: [db_data:/var/lib/postgresql/data]
-              env_file: .env
-              ports: ["5432:5432"]
+            # --- not using local db image as connect to neondb --- 
+            # db:
+              # image: postgres:15-alpine
+              # volumes: [db_data:/var/lib/postgresql/data]
+              # env_file: .env
+              # ports: ["5432:5432"]
+            # ------------------------------------------------------
           volumes:
             db_data:
           EOF
 
-          # 6. Chạy Docker Compose
+          # 6. RUN Docker Compose
           docker compose -f docker-compose.prod.yaml up -d
           
-          # 7. Dọn dẹp ảnh cũ
+          # 7. CLEAR OLD IMAGES
           docker image prune -f
