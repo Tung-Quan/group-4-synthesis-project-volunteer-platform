@@ -9,23 +9,25 @@ services:
       - .env
     volumes:
       - ./backend:/app/backend # Mount code (nếu có thay đổi là tự cập nhật)
-    depends_on:
-      - db
+    # not using local db
+    # depends_on:
+    #   - db
 
+  # not using local db
   # 2. Database
-  db:
-    image: postgres:15-alpine
-    restart: always
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    env_file:
-      - .env
-    environment:
-      - POSTGRES_USER=${DATABASE_USER}
-      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
-      - POSTGRES_DB=${DATABASE_NAME}
-    ports:
-      - "5432:5432"
+  # db:
+  #   image: postgres:15-alpine
+  #   restart: always
+  #   volumes:
+  #     - db_data:/var/lib/postgresql/data
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - POSTGRES_USER=${DATABASE_USER}
+  #     - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+  #     - POSTGRES_DB=${DATABASE_NAME}
+  #   ports:
+  #     - "5432:5432"
 
   # 3. Frontend
   frontend:
