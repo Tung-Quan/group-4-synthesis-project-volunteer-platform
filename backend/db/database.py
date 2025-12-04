@@ -4,7 +4,7 @@ import logging
 from ..config.env import ENV, env_settings
 from ..config.logger import logger
 
-logger = logging.getLogger('_name_')
+logger = logging.getLogger('__name__')
 logger.info("Initializing database connection...")
 
 
@@ -34,7 +34,13 @@ class DataBase:
         if getattr(self, "_initialized", False):
             return
         self.env = ENV()
+        
+        self._initialized = True
+        self.connection = None
 
+        self.connect() # Tách hàm connect ra riêng
+
+    def connect(self):
         # Check if database environment variables are configured
         if not all([self.env.DATABASE_HOST, self.env.DATABASE_USER, self.env.DATABASE_NAME]):
             logger.warning(
@@ -225,20 +231,51 @@ class DataBase:
 
         except Exception as e:
             # re-raise to make failures visible during startup
-            raise
-        self._initialized = True
+            logger.error(f"Error connecting to database: {e}")
+            self.connection = None
+        # self._initialized = True
+    
+    # ----------- Func that ensure connection ---------
+    def ensure_connection(self):
+        """
+        Check being connection to db or not
+        """
+        try:
+            # Gửi lệnh ping nhẹ để test kết nối
+            if self.connection and self.connection.closed == 0:
+                with self.connection.cursor() as cur:
+                    cur.execute("SELECT 1")
+                return # Kết nối vẫn tốt
+        except Exception:
+            pass # Lỗi thì bỏ qua, xuống dưới reconnect
+        
+        # Nếu code chạy đến đây nghĩa là kết nối đã chết
+        logger.warning("⚠️ Database connection lost. Reconnecting...")
+        self.connect()
+    # --------------------------------------------
 
     async def execute_query(self, query: str):
+        # ------------------------------
+        self.ensure_connection()
+        if not self.connection: return None # Safety check
+        # -----------------------------------------------
+
         try:
             data = await self.cursor.execute(query)
             await self.connection.commit()
             return data
         except Exception as e:
             logger.error(f"Error executing query: {e}")
-            await self.connection.rollback()
+            try:
+                if self.connection: await self.connection.rollback()
+            except: pass
             return None
 
     async def fetch_one(self, query: str, params: tuple = ()):
+        # ------------------------------
+        self.ensure_connection()
+        if not self.connection: return None # Safety check
+        # -----------------------------------------------
         try:
             await self.cursor.execute(query, params)
             return await self.cursor.fetchone()
@@ -249,6 +286,10 @@ class DataBase:
     # Synchronous helpers for blocking psycopg2 usage from sync endpoints
     def execute_query_sync(self, query: str, params: tuple = ()):
         """Execute a query and return all results. Creates a new cursor for thread safety."""
+        # --- Auto Reconnect ---
+        self.ensure_connection()
+        # --------------------------------
+
         if not self.connection:
             logger.error("Database connection not initialized")
             return None
@@ -281,6 +322,9 @@ class DataBase:
 
     def fetch_one_sync(self, query: str, params: tuple = ()):
         """Fetch a single row. Creates a new cursor for thread safety."""
+        # --- Auto Reconnect ---
+        self.ensure_connection()
+        # --------------------------------
         if not self.connection:
             logger.error("Database connection not initialized")
             return None
