@@ -9,7 +9,7 @@ function AttendVolunteer({ volunteer }) {
     try {
       const markAttendance = {
         slot_id: slotId,
-        student_user_id: volunteer.student_no,
+        student_user_id: volunteer.student_user_id,
         attended: attend
       }
 
