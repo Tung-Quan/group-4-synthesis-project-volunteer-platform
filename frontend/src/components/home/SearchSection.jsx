@@ -15,6 +15,7 @@ function SearchSection() {
     <div className="w-full h-full flex flex-col items-center justify-center bg-white p-6 rounded-lg shadow-lg">
       <h2 className="text-3xl font-extrabold font-serif text-gray-800 mb-6 uppercase">
         Tìm kiếm hoạt động
+        tình nguyện
       </h2>
       <form onSubmit={handleSearch} className="relative w-full max-w-md">
         <input
