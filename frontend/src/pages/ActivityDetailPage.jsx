@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo  } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
@@ -84,6 +84,17 @@ function ActivityDetailPage() {
     }
   };
 
+  const totalRewardDays = useMemo(() => {
+    if (!activity?.slots || activity.slots.length === 0) {
+      return 0;
+    }
+    const totalDays = activity.slots.reduce((sum, slot) => {
+      return sum + (Number(slot.day_reward) || 0);
+    }, 0);
+    return totalDays;
+  }, [activity]);
+
+
   if (isLoading) return <div className="text-center p-4">Đang tải chi tiết hoạt động...</div>;
   if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
   if (!activity) return <div className="text-center p-4">Không tìm thấy hoạt động.</div>;
@@ -121,6 +132,7 @@ function ActivityDetailPage() {
         userType={user?.type}
         applicationStatus={userApplicationStatus}
         onCancelClick={() => alert("Chức năng hủy đang được phát triển")}
+        totalRewardDays={totalRewardDays} // <-- Truyền prop vào Header
       />
 
       <div className="bg-white p-6 mt-6 rounded-xl shadow-md border border-gray-200">

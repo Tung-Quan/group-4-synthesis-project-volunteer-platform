@@ -3,8 +3,10 @@ import React from 'react';
 const CloverIcon = () => (
   <span className="text-green-500 text-lg mr-2">🍀</span>
 );
+const RewardIcon = () => ( <span className="text-yellow-500 text-lg mr-2">🌟</span> );
 
-function ActivityDetailHeader({ activity, onRegisterClick, userType, onCancelClick, applicationStatus }) {
+
+function ActivityDetailHeader({ activity, onRegisterClick, userType, onCancelClick, applicationStatus, totalRewardDays }) {
   const renderActionButtons = () => {
     if (userType === 'ORGANIZER') {
       return null;
@@ -72,6 +74,15 @@ function ActivityDetailHeader({ activity, onRegisterClick, userType, onCancelCli
       </div>
 
       <div className="flex flex-col space-y-2 pt-4">
+        {totalRewardDays > 0 && (
+          <div className="flex items-center">
+            <RewardIcon />
+            <p className="text-gray-700">
+              Tổng ngày CTXH: <span className="text-blue-600 font-semibold">{totalRewardDays}</span>
+            </p>
+          </div>
+        )}
+
         {activity.time && (
           <div className="flex items-center">
             <CloverIcon />
