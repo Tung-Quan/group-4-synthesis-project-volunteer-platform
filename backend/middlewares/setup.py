@@ -12,17 +12,6 @@ from datetime import datetime, UTC
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         logger.info(f"Incoming request: {request.method} {request.url}")
-        # try:
-        #     # Try to read body for debug (may be empty or streamed)
-        #     body = await request.body()
-        #     if body:
-        #         try:
-        #             logger.debug(f"Request body: {body.decode('utf-8')}")
-        #         except Exception:
-        #             logger.debug(f"Request body (raw bytes, {len(body)} bytes)")
-        # except Exception:
-        #     # If the body cannot be read (e.g., streaming) just continue
-        #     logger.debug("Could not read request body")
         start = datetime.now(UTC)
         try:
             response = await call_next(request)
@@ -62,10 +51,7 @@ def setup_middlewares(app: FastAPI):
     # Add custom middlewares that rely on sessions or authentication
     app.add_middleware(CSRFMiddleware)
     logger.info("CSRFMiddleware added.")
-    # IMPORTANT: SessionMiddleware must be installed before any middleware that accesses
-    # request.session at runtime. Because Starlette's add_middleware builds the stack
-    # such that the last added middleware is executed first, we add SessionMiddleware
-    # after CSRFMiddleware so its runtime execution precedes CSRFMiddleware.
+    # IMPORTANT: SessionMiddleware must be installed before CSRF and CORS middleware
     app.add_middleware(SessionMiddleware, secret_key=env_settings.JWT_SECRET)
     logger.info("SessionMiddleware added.")
     # Security headers as a middleware added last so it can update the response
