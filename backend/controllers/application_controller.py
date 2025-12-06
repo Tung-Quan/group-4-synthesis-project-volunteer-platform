@@ -163,9 +163,6 @@ def mark_attendance(event_id, request, organizer_id: str):
     if not event:
         return {"message": "Event not found"}, 404
 
-    if event["organizer_user_id"] != organizer_id:
-        return {"message": "Unauthorized"}, 403
-
     app_query = """
         SELECT status
         FROM applications
@@ -177,6 +174,8 @@ def mark_attendance(event_id, request, organizer_id: str):
         request.student_user_id
     ))
 
+    if app["organizer_user_id"] != organizer_id:
+        return {"message": "Unauthorized"}, 403
     if not app:
         return {"message": "Application not found"}, 404
 
@@ -185,6 +184,7 @@ def mark_attendance(event_id, request, organizer_id: str):
             "message": f"Cannot mark attendance for an application that is '{app['status']}'"
         }, 400
 
+    
     new_status = "attended" if request.attended else "absent"
 
     update_query = """
