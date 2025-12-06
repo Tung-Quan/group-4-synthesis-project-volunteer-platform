@@ -164,8 +164,11 @@ def mark_attendance(event_id, request, organizer_id: str):
         return {"message": "Event not found"}, 404
 
     app_query = """
-        SELECT status
-        FROM applications
+        SELECT 
+            a.status,
+            e.organizer_user_id
+        FROM applications a
+        JOIN events e ON e.id = a.event_id 
         WHERE event_id = %s AND slot_id = %s AND student_user_id = %s
     """
     app = db.fetch_one_sync(app_query, (
