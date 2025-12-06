@@ -52,7 +52,7 @@ This repository includes a minimal FastAPI-based backend under the `backend/` fo
 	pip install -r backend/requirements.txt
 	```
 
-3. Ensure you have a `.env` file at the repository root (or set environment variables) with the database credentials used by `backend/backend.py`:
+3. Ensure you have a `.env` file at the repository root (or set environment variables) with the database credentials used by `backend/main.py`:
 
 	Example `.env`:
 
