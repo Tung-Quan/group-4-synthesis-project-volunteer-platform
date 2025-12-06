@@ -61,7 +61,7 @@ function ApplicationReviewPage() {
               />
             ))
           ) : (
-            <p className="text-center text-gray-500">Hiện không có đơn đăng kí nào.</p>
+            <p className="text-center text-gray-500">Hiện bạn không có quản lý hoạt động nào.</p>
           )}
         </div>
       </>
